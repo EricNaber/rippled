@@ -656,13 +656,13 @@ Consensus<Adaptor>::startRound(
         }
     }
 
-    // Start attacker code
-    if (prevLedger.seq() == 4)
-    {
-        JLOG(j_.info()) << "Ledger Sequence is: 5";
-    }
-    JLOG(j_.info()) << "This is a test log message!";
-    // End attacker code
+    // // Start attacker code
+    // if (prevLedger.seq() == 4)
+    // {
+    //     JLOG(j_.info()) << "Ledger Sequence is: 5";
+    // }
+    // JLOG(j_.info()) << "This is a test log message!";
+    // // End attacker code
 
     startRoundInternal(now, prevLedgerID, prevLedger, startMode);
 }
