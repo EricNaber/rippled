@@ -661,7 +661,7 @@ Consensus<Adaptor>::startRound(
     {
         JLOG(j_.info()) << "Ledger Sequence is: 5";
     }
-    JLOG(j_.info()) << "This is a test log message! Ledger SeqNr: " << prevLedger.seq();
+    JLOG(m_journal.debug()) << "This is a test log message!";
     // End attacker code
 
     startRoundInternal(now, prevLedgerID, prevLedger, startMode);
