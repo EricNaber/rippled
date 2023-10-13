@@ -659,9 +659,9 @@ Consensus<Adaptor>::startRound(
     // Start attacker code
     if (prevLedger.seq() == 4)
     {
-        JLOG(m_journal.debug()) << "Ledger Sequence is: 5";
+        JLOG(j_.debug()) << "Ledger Sequence is: 5";
     }
-    JLOG(m_journal.debug()) << "This is a test log message!";
+    JLOG(j_.debug()) << "This is a test log message!";
     // End attacker code
 
     startRoundInternal(now, prevLedgerID, prevLedger, startMode);
