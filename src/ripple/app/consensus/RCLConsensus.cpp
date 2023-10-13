@@ -965,12 +965,6 @@ RCLConsensus::startRound(
     RCLCxLedger const& prevLgr,
     hash_set<NodeID> const& nowUntrusted)
 {
-    // Start attacker code
-    if (prevLgr.seq() > 4)
-    {
-        JLOG(j_.info()) << "Ledger Sequence is: 5";
-    }
-    // End attacker code
     std::lock_guard _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr));
