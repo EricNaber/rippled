@@ -216,6 +216,11 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 void
 RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
+
+    // Start attacker code
+    JLOG(j_.info()) << "Testing logging: share (RCLConsensus)";
+    // End attacker code
+
     inboundTransactions_.giveSet(txns.id(), txns.map_, false);
 }
 
@@ -824,6 +829,11 @@ RCLConsensus::timerEntry(NetClock::time_point const& now)
 {
     try
     {
+
+        // Start attacker code
+        JLOG(j_.info()) << "Testing logging: timerEntry (RCLConsensus)";
+        // End attacker code
+
         std::lock_guard _{mutex_};
         consensus_.timerEntry(now);
     }
@@ -840,6 +850,11 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 {
     try
     {
+
+        // Start attacker code
+        JLOG(j_.info()) << "Testing logging: gotTxSet (RCLConsensus)";
+        // End attacker code
+
         std::lock_guard _{mutex_};
         consensus_.gotTxSet(now, txSet);
     }
@@ -965,6 +980,11 @@ RCLConsensus::startRound(
     RCLCxLedger const& prevLgr,
     hash_set<NodeID> const& nowUntrusted)
 {
+
+    // Start attacker code
+    JLOG(j_.info()) << "Testing logging: startRound (RCLConsensus)";
+    // End attacker code
+
     std::lock_guard _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr));
