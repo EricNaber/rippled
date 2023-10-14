@@ -657,11 +657,7 @@ Consensus<Adaptor>::startRound(
     }
 
     // // Start attacker code
-    if (prevLedger.seq() == 4)
-    {
-        JLOG(j_.info()) << "Ledger Sequence is: 5";
-    }
-    JLOG(j_.info()) << "Testing Logging!";
+    JLOG(j_.info()) << "Testing Logging: startRound";
     // // End attacker code
 
     startRoundInternal(now, prevLedgerID, prevLedger, startMode);
@@ -693,6 +689,10 @@ Consensus<Adaptor>::startRoundInternal(
         previousLedger_.closeTimeResolution(),
         previousLedger_.closeAgree(),
         previousLedger_.seq() + typename Ledger_t::Seq{1});
+
+    // // Start attacker code
+    JLOG(j_.info()) << "Testing Logging: startRoundInternal -> LedgerSeq: " << previousLedger_.seq();
+    // // End attacker code
 
     playbackProposals();
     if (currPeerPositions_.size() > (prevProposers_ / 2))
@@ -825,6 +825,11 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::timerEntry(NetClock::time_point const& now)
 {
+
+    // // Start attacker code
+    JLOG(j_.info()) << "Testing Logging: timerEntry";
+    // // End attacker code
+
     // Nothing to do if we are currently working on a ledger
     if (phase_ == ConsensusPhase::accepted)
         return;
