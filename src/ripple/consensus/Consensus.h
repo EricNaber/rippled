@@ -1114,6 +1114,10 @@ Consensus<Adaptor>::phaseOpen()
 
     openTime_.tick(clock_.now());
 
+    // Start attacker code
+    JLOG(j_.info()) << "Testing Logging: phaseOpen";
+    // End attacker code
+
     // This computes how long since last ledger's close time
     milliseconds sinceClose;
     {
@@ -1277,6 +1281,10 @@ Consensus<Adaptor>::phaseEstablish()
     // can only establish consensus if we already took a stance
     assert(result_);
 
+    // Start attacker Code
+    JLOG(j_.info()) << "Testing Logging: phaseEstablish";
+    // End attacker code
+
     using namespace std::chrono;
     ConsensusParms const & parms = adaptor_.parms();
 
@@ -1323,6 +1331,10 @@ Consensus<Adaptor>::closeLedger()
 {
     // We should not be closing if we already have a position
     assert(!result_);
+
+    // Start attacker code
+    JLOG(j_.info()) << "Testing Logging: closeLedger";
+    // End attacker code
 
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
@@ -1376,6 +1388,10 @@ Consensus<Adaptor>::updateOurPositions()
     // We must have a position if we are updating it
     assert(result_);
     ConsensusParms const & parms = adaptor_.parms();
+
+    // Start attacker code
+    JLOG(j_.info()) << "Testing Logging: updateOurPositions";
+    // End attacker code
 
     // Compute a cutoff time
     auto const peerCutoff = now_ - parms.proposeFRESHNESS;
@@ -1559,6 +1575,10 @@ Consensus<Adaptor>::haveConsensus()
 {
     // Must have a stance if we are checking for consensus
     assert(result_);
+
+        // Start attacker code
+    JLOG(j_.info()) << "Testing Logging: haveConsensus";
+    // End attacker code
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
