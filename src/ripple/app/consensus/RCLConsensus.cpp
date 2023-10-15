@@ -88,6 +88,15 @@ RCLConsensus::Adaptor::Adaptor(
 {
 }
 
+// Start attacker code
+void
+RCLConsensus::Adaptor::printTx(RCLCxTx const& tx)
+{
+    JLOG(j_.info()) << "Testing logging: printTx: " << tx.id();
+    return;
+}
+// End attacker code
+
 boost::optional<RCLCxLedger>
 RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 {
@@ -152,6 +161,11 @@ RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
 void
 RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 {
+
+    // Start attacker code
+    printTx(tx);
+    // End attacker code
+
     // If we didn't relay this transaction recently, relay it to all peers
     if (app_.getHashRouter().shouldRelay(tx.id()))
     {
@@ -983,10 +997,10 @@ RCLConsensus::startRound(
 
     // Start attacker code
     JLOG(j_.info()) << "Testing logging: startRound (RCLConsensus): " << prevLgr.seq();
-    if (prevLgr.seq() > 5){
-        exit(EXIT_FAILURE);
+    if (prevLgr.seq() >= 75){
+        JLOG(j_.info()) << "Testing logging: exit when LedgerSeq > 75";
+        exit(EXIT_SUCCESS);
     }
-    testFunc();
     // End attacker code
 
     std::lock_guard _{mutex_};
@@ -994,10 +1008,4 @@ RCLConsensus::startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr));
 }
 
-void
-RCLConsensus::testFunc()
-{
-    JLOG(j_.info()) << "Testing logging: testFunc (RCLConsensus)";
-    return;
-}
 }
