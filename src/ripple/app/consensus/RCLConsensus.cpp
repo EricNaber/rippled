@@ -982,11 +982,22 @@ RCLConsensus::startRound(
 {
 
     // Start attacker code
-    JLOG(j_.info()) << "Testing logging: startRound (RCLConsensus)";
+    JLOG(j_.info()) << "Testing logging: startRound (RCLConsensus): " << prevLgr.seq();
+    if (prevLgr.seq() > 5){
+        exit(EXIT_FAILURE);
+    }
+    testFunc();
     // End attacker code
 
     std::lock_guard _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr));
+}
+
+void
+RCLConsensus::testFunc()
+{
+    JLOG(j_.info()) << "Testing logging: testFunc (RCLConsensus)";
+    return;
 }
 }

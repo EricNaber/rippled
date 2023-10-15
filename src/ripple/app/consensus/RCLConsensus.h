@@ -473,6 +473,9 @@ public:
         RCLCxLedger const& prevLgr,
         hash_set<NodeID> const& nowUntrusted);
 
+    void
+    testFunc(void);
+
     //! @see Consensus::timerEntry
     void
     timerEntry(NetClock::time_point const& now);
