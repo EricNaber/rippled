@@ -1,0 +1,23 @@
+{
+    "result" : {
+       "deprecated" : "Signing support in the 'submit' command has been deprecated and will be removed in a future version of the server. Please migrate to a standalone signing tool.",
+       "engine_result" : "tesSUCCESS",
+       "engine_result_code" : 0,
+       "engine_result_message" : "The transaction was applied. Only final in a validated ledger.",
+       "status" : "success",
+       "tx_blob" : "1200002280000000240000000261400000003B9ACA0068400000000000000A73210330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD0207447304502210081086E242686D8CD8A4E0B0204737ECA484BACCA5912EBD6B571695DF5DA31D1022029A2F24D93A97E4C719B3BF51B45817D14D138458EC9CFD81FEFED5A1CADF6AD8114B5F762798A53D543A014CAF8B297CFF8F2F937E88314427AB5218BD14AE6B74253BA42B2FC1614D6B642",
+       "tx_json" : {
+          "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+          "Amount" : "1000000000",
+          "Destination" : "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN",
+          "Fee" : "10",
+          "Flags" : 2147483648,
+          "Sequence" : 2,
+          "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+          "TransactionType" : "Payment",
+          "TxnSignature" : "304502210081086E242686D8CD8A4E0B0204737ECA484BACCA5912EBD6B571695DF5DA31D1022029A2F24D93A97E4C719B3BF51B45817D14D138458EC9CFD81FEFED5A1CADF6AD",
+          "hash" : "40464879583B3D97E0F292D9805A44551FB1AF9EC3C08A5DE53DF4918430EEAC"
+       }
+    }
+ }
+ 
