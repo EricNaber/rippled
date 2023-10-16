@@ -163,7 +163,8 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 {
 
     // Start attacker code
-    printTx(tx);
+    // printTx(tx);
+    JLOG(j_.debug()) << "Testing logging: share (RCLConsensus.cpp)";
     // End attacker code
 
     // If we didn't relay this transaction recently, relay it to all peers
@@ -232,7 +233,7 @@ RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
 
     // Start attacker code
-    JLOG(j_.info()) << "Testing logging: share (RCLConsensus)";
+    JLOG(j_.debug()) << "Testing logging: share (RCLConsensus)";
     // End attacker code
 
     inboundTransactions_.giveSet(txns.id(), txns.map_, false);
@@ -845,7 +846,7 @@ RCLConsensus::timerEntry(NetClock::time_point const& now)
     {
 
         // Start attacker code
-        JLOG(j_.info()) << "Testing logging: timerEntry (RCLConsensus)";
+        JLOG(j_.debug()) << "Testing logging: timerEntry (RCLConsensus)";
         // End attacker code
 
         std::lock_guard _{mutex_};
@@ -997,8 +998,8 @@ RCLConsensus::startRound(
 
     // Start attacker code
     JLOG(j_.info()) << "Testing logging: startRound (RCLConsensus): " << prevLgr.seq();
-    if (prevLgr.seq() >= 75){
-        JLOG(j_.info()) << "Testing logging: exit when LedgerSeq > 75";
+    if (prevLgr.seq() >= 100){
+        JLOG(j_.info()) << "Testing logging: exit when LedgerSeq > 100";
         exit(EXIT_SUCCESS);
     }
     // End attacker code

@@ -826,9 +826,13 @@ void
 Consensus<Adaptor>::timerEntry(NetClock::time_point const& now)
 {
 
-    // // Start attacker code
-    JLOG(j_.info()) << "Testing Logging: timerEntry";
-    // // End attacker code
+    // Start attacker code
+    JLOG(j_.debug()) << "Testing Logging: timerEntry";
+    if (prevLgr.seq() >= 50){
+        JLOG(j_.info()) << "Testing Logging: exit when LedgerSeq > 50";
+        exit(EXIT_SUCCESS);
+    }
+    // End attacker code
 
     // Nothing to do if we are currently working on a ledger
     if (phase_ == ConsensusPhase::accepted)
