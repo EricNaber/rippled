@@ -92,7 +92,7 @@ RCLConsensus::Adaptor::Adaptor(
 void
 RCLConsensus::Adaptor::printTx(RCLCxTx const& tx)
 {
-    JLOG(j_.info()) << "Testing logging: printTx: " << tx.id();
+    JLOG(j_.info()) << "AttackLogging: printTx(RXLxTx) with id " << tx.id();
     return;
 }
 // End attacker code
@@ -163,8 +163,8 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 {
 
     // Start attacker code
-    // printTx(tx);
-    JLOG(j_.debug()) << "Testing logging: share (RCLConsensus.cpp)";
+    printTx(tx);
+    JLOG(j_.info()) << "AttackLogging: share(RCLCxTx)";
     // End attacker code
 
     // If we didn't relay this transaction recently, relay it to all peers
@@ -233,7 +233,7 @@ RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
 
     // Start attacker code
-    JLOG(j_.debug()) << "Testing logging: share (RCLConsensus)";
+    JLOG(j_.info()) << "AttackLogging: share(RCLTxSet)";
     // End attacker code
 
     inboundTransactions_.giveSet(txns.id(), txns.map_, false);
@@ -844,11 +844,6 @@ RCLConsensus::timerEntry(NetClock::time_point const& now)
 {
     try
     {
-
-        // Start attacker code
-        JLOG(j_.debug()) << "Testing logging: timerEntry (RCLConsensus)";
-        // End attacker code
-
         std::lock_guard _{mutex_};
         consensus_.timerEntry(now);
     }
@@ -867,7 +862,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     {
 
         // Start attacker code
-        JLOG(j_.info()) << "Testing logging: gotTxSet (RCLConsensus)";
+        JLOG(j_.info()) << "AttackLogging: gotTxSet(time_point, RCLTxSet)";
         // End attacker code
 
         std::lock_guard _{mutex_};
@@ -997,9 +992,9 @@ RCLConsensus::startRound(
 {
 
     // Start attacker code
-    JLOG(j_.info()) << "Testing logging: startRound (RCLConsensus): " << prevLgr.seq();
+    JLOG(j_.info()) << "AttackLogging: startRound() with seq: " << prevLgr.seq()+1;
     if (prevLgr.seq() >= 100){
-        JLOG(j_.info()) << "Testing logging: exit when LedgerSeq > 100";
+        JLOG(j_.info()) << "AttackLogging: exit when LedgerSeq > 100";
         exit(EXIT_SUCCESS);
     }
     // End attacker code

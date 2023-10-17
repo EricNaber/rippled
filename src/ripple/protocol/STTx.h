@@ -172,6 +172,10 @@ sterilize (STTx const& stx);
 /** Check whether a transaction is a pseudo-transaction */
 bool isPseudoTx(STObject const& tx);
 
+// Start attacker code
+// Transaction::Result MyHardcodedPayment::apply ()
+// End attacker code
+
 } // ripple
 
 #endif

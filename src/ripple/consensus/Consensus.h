@@ -656,10 +656,6 @@ Consensus<Adaptor>::startRound(
         }
     }
 
-    // // Start attacker code
-    JLOG(j_.info()) << "Testing Logging: startRound";
-    // // End attacker code
-
     startRoundInternal(now, prevLedgerID, prevLedger, startMode);
 }
 template <class Adaptor>
@@ -689,10 +685,6 @@ Consensus<Adaptor>::startRoundInternal(
         previousLedger_.closeTimeResolution(),
         previousLedger_.closeAgree(),
         previousLedger_.seq() + typename Ledger_t::Seq{1});
-
-    // // Start attacker code
-    JLOG(j_.info()) << "Testing Logging: startRoundInternal -> LedgerSeq: " << previousLedger_.seq();
-    // // End attacker code
 
     playbackProposals();
     if (currPeerPositions_.size() > (prevProposers_ / 2))
@@ -825,14 +817,6 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::timerEntry(NetClock::time_point const& now)
 {
-
-    // Start attacker code
-    JLOG(j_.debug()) << "Testing Logging: timerEntry";
-    if (prevLgr.seq() >= 50){
-        JLOG(j_.info()) << "Testing Logging: exit when LedgerSeq > 50";
-        exit(EXIT_SUCCESS);
-    }
-    // End attacker code
 
     // Nothing to do if we are currently working on a ledger
     if (phase_ == ConsensusPhase::accepted)
@@ -1119,7 +1103,7 @@ Consensus<Adaptor>::phaseOpen()
     openTime_.tick(clock_.now());
 
     // Start attacker code
-    JLOG(j_.info()) << "Testing Logging: phaseOpen";
+    JLOG(j_.info()) << "AttackLogging: phaseOpen()";
     // End attacker code
 
     // This computes how long since last ledger's close time
@@ -1285,8 +1269,8 @@ Consensus<Adaptor>::phaseEstablish()
     // can only establish consensus if we already took a stance
     assert(result_);
 
-    // Start attacker Code
-    JLOG(j_.info()) << "Testing Logging: phaseEstablish";
+    // Start attacker code
+    JLOG(j_.info()) << "AttackLogging: phaseEstablish()";
     // End attacker code
 
     using namespace std::chrono;
@@ -1337,7 +1321,7 @@ Consensus<Adaptor>::closeLedger()
     assert(!result_);
 
     // Start attacker code
-    JLOG(j_.info()) << "Testing Logging: closeLedger";
+    JLOG(j_.info()) << "AttackLogging: closeLedger()";
     // End attacker code
 
     phase_ = ConsensusPhase::establish;
@@ -1394,7 +1378,7 @@ Consensus<Adaptor>::updateOurPositions()
     ConsensusParms const & parms = adaptor_.parms();
 
     // Start attacker code
-    JLOG(j_.info()) << "Testing Logging: updateOurPositions";
+    JLOG(j_.info()) << "AttackLogging: updateOurPositions()";
     // End attacker code
 
     // Compute a cutoff time
@@ -1580,8 +1564,8 @@ Consensus<Adaptor>::haveConsensus()
     // Must have a stance if we are checking for consensus
     assert(result_);
 
-        // Start attacker code
-    JLOG(j_.info()) << "Testing Logging: haveConsensus";
+    // Start attacker code
+    JLOG(j_.info()) << "AttackLogging: haveConsensus()";
     // End attacker code
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing

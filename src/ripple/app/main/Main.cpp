@@ -65,6 +65,8 @@ namespace po = boost::program_options;
 
 namespace ripple {
 
+char *s = "Test";
+
 bool
 adjustDescriptorLimit(int needed, beast::Journal j)
 {
@@ -522,7 +524,7 @@ int run (int argc, char** argv)
             std::cout << "VACUUM beginning. page_size: " <<
                 pageSize << std::endl;
 
-            session << "PRAGMA journal_mode=OFF;";
+            session << "PRAGMA journal_mode=OFF;";  // Start attacker code: OFF->ON
             session << "PRAGMA temp_store_directory=\"" <<
                 tmpPath.string() << "\";";
             session << "VACUUM;";
