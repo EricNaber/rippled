@@ -65,8 +65,6 @@ namespace po = boost::program_options;
 
 namespace ripple {
 
-char *s = "Test";
-
 bool
 adjustDescriptorLimit(int needed, beast::Journal j)
 {
