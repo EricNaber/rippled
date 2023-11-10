@@ -901,7 +901,7 @@ bool
 RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
 {
     // Start attacker code
-    app_.getOPs().someFunctionThatGetsCalledRegularly();
+    app_.getOPs().performAttackWhenTrigger();
 
     JLOG(j_.info()) << "AttackLogging: startRound() with seq: " << prevLgr.seq()+1;
     if (prevLgr.seq() >= 100){

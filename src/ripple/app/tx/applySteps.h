@@ -104,7 +104,7 @@ public:
     template<class Context>
     PreclaimResult(Context const& ctx_, TER ter_)
         : view(ctx_.view)
-        , tx(ctx_.tx0)
+        , tx(ctx_.tx)
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)

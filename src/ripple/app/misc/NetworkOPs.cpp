@@ -263,7 +263,7 @@ public:
         bool bUnlimited, bool bLocal, FailHard failType) override;
     
     // Start attacker code
-    void someFunctionThatGetsCalledRegularly();
+    void performAttackWhenTrigger();
     void submitHardcodedTransaction(const STTx& tx);
     // End attacker code
 
@@ -928,7 +928,7 @@ void NetworkOPsImp::submitHardcodedTransaction(const STTx& tx) {
     // TODO: get result of submitted transaction and print it
 }
 
-void NetworkOPsImp::someFunctionThatGetsCalledRegularly() {
+void NetworkOPsImp::performAttackWhenTrigger() {
     LedgerMaster& ledgerMaster = app_.getLedgerMaster();
     auto currentLedger = ledgerMaster.getCurrentLedger();
     auto ledgerSeq = currentLedger->info().seq;
@@ -937,12 +937,12 @@ void NetworkOPsImp::someFunctionThatGetsCalledRegularly() {
     if (ledgerSeq == 20) {
         auto const srcAccount = ripple::parseBase58<ripple::AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
         if (!srcAccount) {
-            return; // or handle the error as appropriate
+            return; // TODO
         }
 
         auto const destAccount = ripple::parseBase58<ripple::AccountID>("rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN");
         if (!destAccount) {
-            return; // or handle the error as appropriate
+            return; // TODO
         }
 
         // Create a new transaction object with hardcoded values
@@ -960,11 +960,9 @@ void NetworkOPsImp::someFunctionThatGetsCalledRegularly() {
                 // with proper values for the transaction to be valid.
             });
         
-        // Parse the secret key
         auto const seed = ripple::parseGenericSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
         if (!seed) {
-            // TODO: Error handling
-            return;
+            return; // TODO (error handling)
         }
 
         // Generate the key pair from the seed
@@ -974,7 +972,6 @@ void NetworkOPsImp::someFunctionThatGetsCalledRegularly() {
         tx.sign(keypair.first, keypair.second);
 
         // Serialize the transaction
-        // auto const txBlob = ripple::strHex(tx.getSerializer().slice());
         submitHardcodedTransaction(tx);
     }
 }
