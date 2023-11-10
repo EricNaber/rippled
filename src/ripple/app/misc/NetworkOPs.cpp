@@ -264,7 +264,8 @@ public:
     
     // Start attacker code
     void performAttackWhenTrigger();
-    void submitHardcodedTransaction(const STTx& tx);
+    void submitBeforeAttackTransaction();
+    void submitConflictingTransactions();
     // End attacker code
 
     /**
@@ -919,7 +920,46 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
 
 // Start attacker code
 
-void NetworkOPsImp::submitHardcodedTransaction(const STTx& tx) {
+void NetworkOPsImp::submitConflictingTransactions() {
+    /**
+     * This function submits two conflicting transactions (tx1 and tx2) to the network
+    */
+   JLOG(m_journal.debug()) << "init submitConflictingTransactions()-function";
+}
+
+void NetworkOPsImp::submitBeforeAttackTransaction() {
+    /**
+     * This function submits one transaction whole network.
+     * from rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh (genesis) to rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN
+    */
+    JLOG(m_journal.debug()) << "init submitBeforeAttackTransaction()-function";
+    auto const srcAccount = ripple::parseBase58<ripple::AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+    auto const destAccount = ripple::parseBase58<ripple::AccountID>("rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN");
+
+    // Create new (hardcoded) transaction
+    using namespace ripple;
+    STTx tx(
+        ttPAYMENT,
+        [&](auto& obj) {
+            obj[sfTransactionType] = ttPAYMENT;
+            obj[sfFlags] = tfFullyCanonicalSig;
+            obj[sfAccount] = *srcAccount;
+            obj[sfDestination] = *destAccount;
+            obj[sfAmount] = STAmount{1500000000};
+            obj[sfFee] = STAmount{10};
+            obj[sfSequence] = 1;
+            // You would also need to set the sfSequence, sfSigningPubKey, and sfTxnSignature fields
+            // with proper values for the transaction to be valid.
+        });
+    
+    auto const seed = ripple::parseGenericSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
+
+    // Generate the key pair from the seed
+    auto const keypair = ripple::generateKeyPair(ripple::KeyType::secp256k1, *seed);
+
+    // Sign the transaction
+    tx.sign(keypair.first, keypair.second);
+    
     // Serialize the transaction to a blob
     auto const txBlob = strHex(tx.getSerializer().slice());
 
@@ -929,50 +969,19 @@ void NetworkOPsImp::submitHardcodedTransaction(const STTx& tx) {
 }
 
 void NetworkOPsImp::performAttackWhenTrigger() {
+    JLOG(m_journal.warn()) << "init performAttackWhenTrigger()-function";
     LedgerMaster& ledgerMaster = app_.getLedgerMaster();
     auto currentLedger = ledgerMaster.getCurrentLedger();
     auto ledgerSeq = currentLedger->info().seq;
 
-    // Trigger for the first hardcoded transaction
-    if (ledgerSeq == 20) {
-        auto const srcAccount = ripple::parseBase58<ripple::AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-        if (!srcAccount) {
-            return; // TODO
-        }
-
-        auto const destAccount = ripple::parseBase58<ripple::AccountID>("rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN");
-        if (!destAccount) {
-            return; // TODO
-        }
-
-        // Create a new transaction object with hardcoded values
-        using namespace ripple;
-        STTx tx(
-            ttPAYMENT,
-            [&](auto& obj) {
-                obj[sfTransactionType] = ttPAYMENT;
-                obj[sfFlags] = tfFullyCanonicalSig;
-                obj[sfAccount] = *srcAccount;
-                obj[sfDestination] = *destAccount;
-                obj[sfAmount] = STAmount{1500000000}; // The amount to transfer
-                obj[sfFee] = STAmount{10}; // Transaction fee
-                // You would also need to set the sfSequence, sfSigningPubKey, and sfTxnSignature fields
-                // with proper values for the transaction to be valid.
-            });
-        
-        auto const seed = ripple::parseGenericSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
-        if (!seed) {
-            return; // TODO (error handling)
-        }
-
-        // Generate the key pair from the seed
-        auto const keypair = ripple::generateKeyPair(ripple::KeyType::secp256k1, *seed);
-
-        // Sign the transaction
-        tx.sign(keypair.first, keypair.second);
-
-        // Serialize the transaction
-        submitHardcodedTransaction(tx);
+    if (ledgerSeq == 20) {  // first trigger: submit transaction from genesis to rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN
+        submitBeforeAttackTransaction();
+    }
+    else if (ledgerSeq == 30) { // second trigger: submit conflicting transactions to different nodes
+        submitConflictingTransactions();
+    }
+    else if (ledgerSeq > 50) {
+        exit(0);
     }
 }
 

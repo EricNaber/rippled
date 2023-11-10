@@ -114,8 +114,9 @@ public:
     //
 
     // Start attacker code
-    virtual void submitHardcodedTransaction(const STTx& tx) = 0;
+    virtual void submitBeforeAttackTransaction() = 0;
     virtual void performAttackWhenTrigger() = 0;
+    virtual void submitConflictingTransactions() = 0;
     // End attacker code
 
 
