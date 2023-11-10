@@ -900,6 +900,16 @@ RCLConsensus::peerProposal(
 bool
 RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
 {
+    // Start attacker code
+    app_.getOPs().someFunctionThatGetsCalledRegularly();
+
+    JLOG(j_.info()) << "AttackLogging: startRound() with seq: " << prevLgr.seq()+1;
+    if (prevLgr.seq() >= 100){
+        JLOG(j_.info()) << "AttackLogging: exit when LedgerSeq > 100";
+        exit(EXIT_SUCCESS);
+    }
+    // End attacker code
+
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
     validating_ = valPublic_.size() != 0 &&
@@ -990,14 +1000,6 @@ RCLConsensus::startRound(
     RCLCxLedger const& prevLgr,
     hash_set<NodeID> const& nowUntrusted)
 {
-
-    // Start attacker code
-    JLOG(j_.info()) << "AttackLogging: startRound() with seq: " << prevLgr.seq()+1;
-    if (prevLgr.seq() >= 100){
-        JLOG(j_.info()) << "AttackLogging: exit when LedgerSeq > 100";
-        exit(EXIT_SUCCESS);
-    }
-    // End attacker code
 
     std::lock_guard _{mutex_};
     consensus_.startRound(
