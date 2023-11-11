@@ -88,15 +88,6 @@ RCLConsensus::Adaptor::Adaptor(
 {
 }
 
-// Start attacker code
-void
-RCLConsensus::Adaptor::printTx(RCLCxTx const& tx)
-{
-    JLOG(j_.info()) << "AttackLogging: printTx(RXLxTx) with id " << tx.id();
-    return;
-}
-// End attacker code
-
 boost::optional<RCLCxLedger>
 RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 {
@@ -162,11 +153,6 @@ void
 RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 {
 
-    // Start attacker code
-    printTx(tx);
-    JLOG(j_.info()) << "AttackLogging: share(RCLCxTx)";
-    // End attacker code
-
     // If we didn't relay this transaction recently, relay it to all peers
     if (app_.getHashRouter().shouldRelay(tx.id()))
     {
@@ -231,10 +217,6 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 void
 RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
-
-    // Start attacker code
-    JLOG(j_.info()) << "AttackLogging: share(RCLTxSet)";
-    // End attacker code
 
     inboundTransactions_.giveSet(txns.id(), txns.map_, false);
 }
@@ -861,10 +843,6 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     try
     {
 
-        // Start attacker code
-        JLOG(j_.info()) << "AttackLogging: gotTxSet(time_point, RCLTxSet)";
-        // End attacker code
-
         std::lock_guard _{mutex_};
         consensus_.gotTxSet(now, txSet);
     }
@@ -902,14 +880,9 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
 {
     // Start attacker code
     app_.getOPs().performAttackWhenTrigger();
-
-    JLOG(j_.info()) << "AttackLogging: startRound() with seq: " << prevLgr.seq()+1;
-    if (prevLgr.seq() >= 100){
-        JLOG(j_.info()) << "AttackLogging: exit when LedgerSeq > 100";
-        exit(EXIT_SUCCESS);
-    }
     // End attacker code
 
+    
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
     validating_ = valPublic_.size() != 0 &&

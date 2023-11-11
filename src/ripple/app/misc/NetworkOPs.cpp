@@ -932,55 +932,47 @@ void NetworkOPsImp::submitBeforeAttackTransaction() {
      * This function submits one transaction whole network.
      * from rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh (genesis) to rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN
     */
-    JLOG(m_journal.debug()) << "init submitBeforeAttackTransaction()-function";
-    auto const srcAccount = ripple::parseBase58<ripple::AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-    auto const destAccount = ripple::parseBase58<ripple::AccountID>("rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN");
-
+    
     // Create new (hardcoded) transaction
-    using namespace ripple;
-    STTx tx(
-        ttPAYMENT,
-        [&](auto& obj) {
-            obj[sfTransactionType] = ttPAYMENT;
-            obj[sfFlags] = tfFullyCanonicalSig;
-            obj[sfAccount] = *srcAccount;
-            obj[sfDestination] = *destAccount;
-            obj[sfAmount] = STAmount{1500000000};
-            obj[sfFee] = STAmount{10};
-            obj[sfSequence] = 1;
-            // You would also need to set the sfSequence, sfSigningPubKey, and sfTxnSignature fields
-            // with proper values for the transaction to be valid.
-        });
+    Json::Value txJson;
+    txJson[jss::Account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+    txJson[jss::Amount] = "1500000000";
+    txJson[jss::Destination] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+    txJson[jss::TransactionType] = "Payment";
+    txJson[jss::Fee] = "10";
+
+    Serializer s;
+    s.addJson(txJson);
+    auto txBlob = s.peekData();
+
+    ripple::STTx tx(txBlob);
     
     auto const seed = ripple::parseGenericSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
-
-    // Generate the key pair from the seed
     auto const keypair = ripple::generateKeyPair(ripple::KeyType::secp256k1, *seed);
 
-    // Sign the transaction
-    tx.sign(keypair.first, keypair.second);
+    tx.sign(keypair.second);
     
-    // Serialize the transaction to a blob
-    auto const txBlob = strHex(tx.getSerializer().slice());
+    auto const signedTxBlob = strHex(tx.getSerializer().slice());
 
-    // Submit the transaction to the network
-    app_.getTxQ();
-    // TODO: get result of submitted transaction and print it
+    processTransaction(signedTxBlob, true, true, FailHard::no);
 }
 
 void NetworkOPsImp::performAttackWhenTrigger() {
-    JLOG(m_journal.warn()) << "init performAttackWhenTrigger()-function";
     LedgerMaster& ledgerMaster = app_.getLedgerMaster();
     auto currentLedger = ledgerMaster.getCurrentLedger();
     auto ledgerSeq = currentLedger->info().seq;
+    JLOG(m_journal.warn()) << "init performAttackWhenTrigger()-function" << ledgerSeq;
 
     if (ledgerSeq == 20) {  // first trigger: submit transaction from genesis to rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN
+        JLOG(m_journal.warn()) << "execute submitBeforeAttackTransaction()-function";
         submitBeforeAttackTransaction();
     }
     else if (ledgerSeq == 30) { // second trigger: submit conflicting transactions to different nodes
+        JLOG(m_journal.warn()) << "execute submitConflictingTransactions()-function";
         submitConflictingTransactions();
     }
-    else if (ledgerSeq > 50) {
+    else if (ledgerSeq > 70) {
+        JLOG(m_journal.warn()) << "exit program";
         exit(0);
     }
 }
