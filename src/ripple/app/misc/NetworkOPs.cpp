@@ -259,6 +259,12 @@ public:
         std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType) override;
 
+    // Start attacker code
+    void processTransactionAttack (
+        std::shared_ptr<Transaction>& transaction,
+        bool bUnlimited, bool bLocal, FailHard failType) override;
+    // End attacker code
+
     /**
      * For transactions submitted directly by a client, apply batch of
      * transactions and wait for this transaction to complete.
@@ -953,6 +959,54 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
     else
         doTransactionAsync (transaction, bUnlimited, failType);
 }
+
+// Start attacker code
+void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& transaction,
+        bool bUnlimited, bool bLocal, FailHard failType)
+{
+    auto ev = m_job_queue.makeLoadEvent (jtTXN_PROC, "ProcessTXN");
+    auto const newFlags = app_.getHashRouter ().getFlags (transaction->getID ());
+
+    if ((newFlags & SF_BAD) != 0)
+    {
+        // cached bad
+        transaction->setStatus (INVALID);
+        transaction->setResult (temBAD_SIGNATURE);
+        return;
+    }
+
+    // NOTE eahennis - I think this check is redundant,
+    // but I'm not 100% sure yet.
+    // If so, only cost is looking up HashRouter flags.
+    auto const view = m_ledgerMaster.getCurrentLedger();
+    auto const [validity, reason] = checkValidity(
+        app_.getHashRouter(),
+            *transaction->getSTransaction(),
+                view->rules(), app_.config());
+    assert(validity == Validity::Valid);
+    JLOG(m_journal.info()) << "processTransactionAttack: " << reason;
+
+    // Not concerned with local checks at this point.
+    if (validity == Validity::SigBad)
+    {
+        JLOG(m_journal.info()) << "Transaction has bad signature: " <<
+            reason;
+        transaction->setStatus(INVALID);
+        transaction->setResult(temBAD_SIGNATURE);
+        app_.getHashRouter().setFlags(transaction->getID(),
+            SF_BAD);
+        return;
+    }
+
+    // canonicalize can change our pointer
+    app_.getMasterTransaction ().canonicalize (&transaction);
+
+    if (bLocal)
+        doTransactionSync (transaction, bUnlimited, failType);
+    else
+        doTransactionAsync (transaction, bUnlimited, failType);
+}
+// End attacker
 
 void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction,
         bool bUnlimited, FailHard failType)

@@ -177,17 +177,24 @@ Json::Value doAttack (RPC::Context& context)
 
         // import tx_json-field into context.params:
         Json::Value tx;
-        tx[jss::Account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-        tx[jss::Amount] = "1500000000";
-        tx[jss::Destination] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+        tx[jss::Account] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+        tx[jss::Amount] = "1000000000";
+        tx[jss::Destination] = "rG1eMisac1neCXeZNPYmwV8sovo5vs9dnB";
         tx[jss::Fee] = "10";
         tx[jss::TransactionType] = "Payment";
 
-        // context.params[jss::command] = "submit";
-        context.params[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+        context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
         context.params[jss::tx_json] = tx;
 
         auto ret = RPC::transactionSubmitAttack (
+            context.params, failType, context.role,
+            context.ledgerMaster.getValidatedLedgerAge(),
+            context.app, RPC::getProcessTxnFn (context.netOps));
+        
+        tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
+        context.params[jss::tx_json] = tx;
+
+        ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app, RPC::getProcessTxnFn (context.netOps));

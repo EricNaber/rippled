@@ -845,7 +845,7 @@ Json::Value transactionSubmitAttack (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionAttackFn const& processTransactionAttack)
 {
     using namespace detail;
 
@@ -867,14 +867,14 @@ Json::Value transactionSubmitAttack (
         transactionConstructImpl (
             preprocResult.second, ledger->rules(), app);
     
-    // if (!txn.second)
-    //     return txn.first;
+    if (!txn.second)
+        return txn.first;
 
     // Finally, submit the transaction.
     try
     {
         // FIXME: For performance, should use asynch interface
-        processTransaction (
+        processTransactionAttack (
             txn.second, isUnlimited (role), true, failType);
     }
     catch (std::exception&)
@@ -883,6 +883,7 @@ Json::Value transactionSubmitAttack (
             "Exception occurred during transaction submission.");
     }
 
+    JLOG (j.debug()) << "transactionSubmitAttack: " << transactionFormatResultImpl (txn.second);
     return transactionFormatResultImpl (txn.second);
 }
 // End attacker code
