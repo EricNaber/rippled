@@ -161,4 +161,129 @@ Json::Value doSubmit (RPC::Context& context)
     }
 }
 
+// {
+//   tx_json: <object>,
+//   secret: <secret>
+// }
+Json::Value doAttack (RPC::Context& context)
+{
+    context.loadType = Resource::feeMediumBurdenRPC;
+
+    if (!context.params.isMember (jss::tx_blob))
+    {
+        auto const failType = getFailHard (context);
+
+        if (context.role != Role::ADMIN && !context.app.config().canSign())
+            return RPC::make_error (rpcNOT_SUPPORTED,
+                "Signing is not supported by this server.");
+
+        auto ret = RPC::transactionSubmit (
+            context.params, failType, context.role,
+            context.ledgerMaster.getValidatedLedgerAge(),
+            context.app, RPC::getProcessTxnFn (context.netOps));
+
+        ret[jss::deprecated] = "Signing support in the 'submit' command has been "
+                               "deprecated and will be removed in a future version "
+                               "of the server. Please migrate to a standalone "
+                               "signing tool.";
+
+        return ret;
+    }
+
+    Json::Value jvResult;
+
+    auto ret = strUnHex (context.params[jss::tx_blob].asString ());
+
+    if (!ret || !ret->size ())
+        return rpcError (rpcINVALID_PARAMS);
+
+    SerialIter sitTrans (makeSlice(*ret));
+
+    std::shared_ptr<STTx const> stpTrans;
+
+    try
+    {
+        stpTrans = std::make_shared<STTx const> (std::ref (sitTrans));
+    }
+    catch (std::exception& e)
+    {
+        jvResult[jss::error]        = "invalidTransaction";
+        jvResult[jss::error_exception] = e.what ();
+
+        return jvResult;
+    }
+
+
+    {
+        if (!context.app.checkSigs())
+            forceValidity(context.app.getHashRouter(),
+                stpTrans->getTransactionID(), Validity::SigGoodOnly);
+        auto [validity, reason] = checkValidity(context.app.getHashRouter(),
+            *stpTrans, context.ledgerMaster.getCurrentLedger()->rules(),
+                context.app.config());
+        if (validity != Validity::Valid)
+        {
+            jvResult[jss::error] = "invalidTransaction";
+            jvResult[jss::error_exception] = "fails local checks: " + reason;
+
+            return jvResult;
+        }
+    }
+
+    std::string reason;
+    auto tpTrans = std::make_shared<Transaction> (
+        stpTrans, reason, context.app);
+    if (tpTrans->getStatus() != NEW)
+    {
+        jvResult[jss::error]            = "invalidTransaction";
+        jvResult[jss::error_exception] = "fails local checks: " + reason;
+
+        return jvResult;
+    }
+
+    try
+    {
+        auto const failType = getFailHard (context);
+
+        context.netOps.processTransaction (
+            tpTrans, isUnlimited (context.role), true, failType);
+    }
+    catch (std::exception& e)
+    {
+        jvResult[jss::error]           = "internalSubmit";
+        jvResult[jss::error_exception] = e.what ();
+
+        return jvResult;
+    }
+
+
+    try
+    {
+        jvResult[jss::tx_json] = tpTrans->getJson (JsonOptions::none);
+        jvResult[jss::tx_blob] = strHex (
+            tpTrans->getSTransaction ()->getSerializer ().peekData ());
+
+        if (temUNCERTAIN != tpTrans->getResult ())
+        {
+            std::string sToken;
+            std::string sHuman;
+
+            transResultInfo (tpTrans->getResult (), sToken, sHuman);
+
+            jvResult[jss::engine_result]           = sToken;
+            jvResult[jss::engine_result_code]      = tpTrans->getResult ();
+            jvResult[jss::engine_result_message]   = sHuman;
+        }
+
+        return jvResult;
+    }
+    catch (std::exception& e)
+    {
+        jvResult[jss::error]           = "internalJson";
+        jvResult[jss::error_exception] = e.what ();
+
+        return jvResult;
+    }
+}
+
 } // ripple

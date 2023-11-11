@@ -75,6 +75,7 @@ Json::Value doSignFor               (RPC::Context&);
 Json::Value doCrawlShards           (RPC::Context&);
 Json::Value doStop                  (RPC::Context&);
 Json::Value doSubmit                (RPC::Context&);
+Json::Value doAttack                (RPC::Context&);
 Json::Value doSubmitMultiSigned     (RPC::Context&);
 Json::Value doSubscribe             (RPC::Context&);
 Json::Value doTransactionEntry      (RPC::Context&);

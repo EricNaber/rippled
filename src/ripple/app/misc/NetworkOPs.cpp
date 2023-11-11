@@ -54,6 +54,7 @@
 #include <ripple/protocol/BuildInfo.h>
 // Start attacker code
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 // End attacker code
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/DeliveredAmount.h>
@@ -934,27 +935,26 @@ void NetworkOPsImp::submitBeforeAttackTransaction() {
     */
     
     // Create new (hardcoded) transaction
-    Json::Value txJson;
-    txJson[jss::Account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-    txJson[jss::Amount] = "1500000000";
-    txJson[jss::Destination] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
-    txJson[jss::TransactionType] = "Payment";
-    txJson[jss::Fee] = "10";
+    Json::Value tx_json;
+    tx_json[jss::Account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+    tx_json[jss::Amount] = "1500000000";
+    tx_json[jss::Destination] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+    tx_json[jss::TransactionType] = "Payment";
+    tx_json[jss::Fee] = "10";
 
-    Serializer s;
-    s.addJson(txJson);
-    auto txBlob = s.peekData();
+    Json::Value context;
+    context[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+    context[jss::tx_json] = tx_json;
 
-    ripple::STTx tx(txBlob);
-    
-    auto const seed = ripple::parseGenericSeed("snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
-    auto const keypair = ripple::generateKeyPair(ripple::KeyType::secp256k1, *seed);
+    // context.loadType = Resource::feeMediumBurdenRPC;
 
-    tx.sign(keypair.second);
-    
-    auto const signedTxBlob = strHex(tx.getSerializer().slice());
 
-    processTransaction(signedTxBlob, true, true, FailHard::no);
+    // auto const failType = getFailHard (context);
+
+    // auto ret = RPC::transactionSubmit (
+    //     context, failType, context.role,
+    //     context.ledgerMaster.getValidatedLedgerAge(),
+    //     context.app, RPC::getProcessTxnFn (context.netOps));
 }
 
 void NetworkOPsImp::performAttackWhenTrigger() {
@@ -973,7 +973,6 @@ void NetworkOPsImp::performAttackWhenTrigger() {
     }
     else if (ledgerSeq > 70) {
         JLOG(m_journal.warn()) << "exit program";
-        exit(0);
     }
 }
 
