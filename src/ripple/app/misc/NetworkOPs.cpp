@@ -52,10 +52,6 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
-// Start attacker code
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/rpc/impl/TransactionSign.h>
-// End attacker code
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/beast/rfc2616.h>
@@ -262,12 +258,6 @@ public:
     void processTransaction (
         std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType) override;
-    
-    // Start attacker code
-    void performAttackWhenTrigger();
-    void submitBeforeAttackTransaction();
-    void submitConflictingTransactions();
-    // End attacker code
 
     /**
      * For transactions submitted directly by a client, apply batch of
@@ -918,66 +908,6 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
             processTransaction(t, false, false, FailHard::no);
         });
 }
-
-// Start attacker code
-
-void NetworkOPsImp::submitConflictingTransactions() {
-    /**
-     * This function submits two conflicting transactions (tx1 and tx2) to the network
-    */
-   JLOG(m_journal.debug()) << "init submitConflictingTransactions()-function";
-}
-
-void NetworkOPsImp::submitBeforeAttackTransaction() {
-    /**
-     * This function submits one transaction whole network.
-     * from rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh (genesis) to rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN
-    */
-    
-    // Create new (hardcoded) transaction
-    Json::Value tx_json;
-    tx_json[jss::Account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-    tx_json[jss::Amount] = "1500000000";
-    tx_json[jss::Destination] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
-    tx_json[jss::TransactionType] = "Payment";
-    tx_json[jss::Fee] = "10";
-
-    Json::Value context;
-    context[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
-    context[jss::tx_json] = tx_json;
-
-    // context.loadType = Resource::feeMediumBurdenRPC;
-
-
-    // auto const failType = getFailHard (context);
-
-    // auto ret = RPC::transactionSubmit (
-    //     context, failType, context.role,
-    //     context.ledgerMaster.getValidatedLedgerAge(),
-    //     context.app, RPC::getProcessTxnFn (context.netOps));
-}
-
-void NetworkOPsImp::performAttackWhenTrigger() {
-    LedgerMaster& ledgerMaster = app_.getLedgerMaster();
-    auto currentLedger = ledgerMaster.getCurrentLedger();
-    auto ledgerSeq = currentLedger->info().seq;
-    JLOG(m_journal.warn()) << "init performAttackWhenTrigger()-function" << ledgerSeq;
-
-    if (ledgerSeq == 20) {  // first trigger: submit transaction from genesis to rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN
-        JLOG(m_journal.warn()) << "execute submitBeforeAttackTransaction()-function";
-        submitBeforeAttackTransaction();
-    }
-    else if (ledgerSeq == 30) { // second trigger: submit conflicting transactions to different nodes
-        JLOG(m_journal.warn()) << "execute submitConflictingTransactions()-function";
-        submitConflictingTransactions();
-    }
-    else if (ledgerSeq > 70) {
-        JLOG(m_journal.warn()) << "exit program";
-    }
-}
-
-// End attacker code
-
 
 void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType)

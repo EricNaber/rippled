@@ -877,12 +877,7 @@ RCLConsensus::peerProposal(
 
 bool
 RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
-{
-    // Start attacker code
-    app_.getOPs().performAttackWhenTrigger();
-    // End attacker code
-
-    
+{    
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
     validating_ = valPublic_.size() != 0 &&

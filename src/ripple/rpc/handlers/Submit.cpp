@@ -187,7 +187,7 @@ Json::Value doAttack (RPC::Context& context)
         context.params[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
         context.params[jss::tx_json] = tx;
 
-        auto ret = RPC::transactionSubmit (
+        auto ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app, RPC::getProcessTxnFn (context.netOps));

@@ -113,13 +113,6 @@ public:
     // Network information
     //
 
-    // Start attacker code
-    virtual void submitBeforeAttackTransaction() = 0;
-    virtual void performAttackWhenTrigger() = 0;
-    virtual void submitConflictingTransactions() = 0;
-    // End attacker code
-
-
     virtual OperatingMode getOperatingMode () const = 0;
     virtual std::string strOperatingMode (
         OperatingMode const mode, bool const admin = false) const = 0;

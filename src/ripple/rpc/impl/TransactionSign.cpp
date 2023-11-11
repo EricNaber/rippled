@@ -837,6 +837,56 @@ Json::Value transactionSubmit (
     return transactionFormatResultImpl (txn.second);
 }
 
+// Start attacker code
+/** Returns a Json::objectValue. */
+Json::Value transactionSubmitAttack (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
+    Role role,
+    std::chrono::seconds validatedLedgerAge,
+    Application& app,
+    ProcessTransactionFn const& processTransaction)
+{
+    using namespace detail;
+
+    auto const& ledger = app.openLedger().current();
+    auto j = app.journal ("RPCHandler");
+    JLOG (j.debug()) << "transactionSubmitAttack: " << jvRequest;
+
+
+    // Add and amend fields based on the transaction type.
+    SigningForParams signForParams;
+    transactionPreProcessResult preprocResult = transactionPreProcessImpl (
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
+    
+    if (!preprocResult.second)
+        return preprocResult.first;
+    
+    // Make sure the STTx makes a legitimate Transaction.
+    std::pair <Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl (
+            preprocResult.second, ledger->rules(), app);
+    
+    // if (!txn.second)
+    //     return txn.first;
+
+    // Finally, submit the transaction.
+    try
+    {
+        // FIXME: For performance, should use asynch interface
+        processTransaction (
+            txn.second, isUnlimited (role), true, failType);
+    }
+    catch (std::exception&)
+    {
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction submission.");
+    }
+
+    return transactionFormatResultImpl (txn.second);
+}
+// End attacker code
+
 namespace detail
 {
 // There are a some field checks shared by transactionSignFor

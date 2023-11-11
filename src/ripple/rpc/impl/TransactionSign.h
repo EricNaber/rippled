@@ -101,6 +101,18 @@ Json::Value transactionSubmit (
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
+
+// Start attacker code
+/** Returns a Json::objectValue. */
+Json::Value transactionSubmitAttack (
+    Json::Value params,  // Passed by value so it can be modified locally.
+    NetworkOPs::FailHard failType,
+    Role role,
+    std::chrono::seconds validatedLedgerAge,
+    Application& app,
+    ProcessTransactionFn const& processTransaction);
+// End attacker code
+
 /** Returns a Json::objectValue. */
 Json::Value transactionSignFor (
     Json::Value params,  // Passed by value so it can be modified locally.

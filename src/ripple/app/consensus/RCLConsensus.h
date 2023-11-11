@@ -200,13 +200,6 @@ class RCLConsensus
         void
         share(RCLCxPeerPos const& peerPos);
 
-
-        // Start attacker code
-        void
-        printTx(RCLCxTx const& tx);
-        // End attacker code
-
-
         /** Share disputed transaction to peers.
 
             Only share if the provided transaction hasn't been shared recently.
