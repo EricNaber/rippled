@@ -262,6 +262,42 @@ invoke_apply (ApplyContext& ctx)
     }
 }
 
+// Start attacker code
+static
+std::pair<TER, bool>
+invoke_applyAttack (ApplyContext& ctx)
+{
+    switch(ctx.tx.getTxnType())
+    {
+    case ttACCOUNT_SET:          { SetAccount         p(ctx); return p(); }
+    case ttCHECK_CANCEL:         { CancelCheck        p(ctx); return p(); }
+    case ttCHECK_CASH:           { CashCheck          p(ctx); return p(); }
+    case ttCHECK_CREATE:         { CreateCheck        p(ctx); return p(); }
+    case ttDEPOSIT_PREAUTH:      { DepositPreauth     p(ctx); return p(); }
+    case ttOFFER_CANCEL:         { CancelOffer        p(ctx); return p(); }
+    case ttOFFER_CREATE:         { CreateOffer        p(ctx); return p(); }
+    case ttESCROW_CREATE:        { EscrowCreate       p(ctx); return p(); }
+    case ttESCROW_FINISH:        { EscrowFinish       p(ctx); return p(); }
+    case ttESCROW_CANCEL:        { EscrowCancel       p(ctx); return p(); }
+    case ttPAYCHAN_CLAIM:        { PayChanClaim       p(ctx); return p(); }
+    case ttPAYCHAN_CREATE:       { PayChanCreate      p(ctx); return p(); }
+    case ttPAYCHAN_FUND:         { PayChanFund        p(ctx); return p(); }
+    case ttPAYMENT:              { Payment            p(ctx); return p(); }
+    case ttREGULAR_KEY_SET :     { SetRegularKey      p(ctx); return p(); }
+    case ttSIGNER_LIST_SET :     { SetSignerList      p(ctx); return p(); }
+    case ttTICKET_CANCEL:        { CancelTicket       p(ctx); return p(); }
+    case ttTICKET_CREATE:        { CreateTicket       p(ctx); return p(); }
+    case ttTRUST_SET:            { SetTrust           p(ctx); return p(); }
+    case ttACCOUNT_DELETE:       { DeleteAccount      p(ctx); return p(); }
+    case ttAMENDMENT:
+    case ttFEE:                  { Change             p(ctx); return p(); }
+    default:
+        assert(false);
+        return { temUNKNOWN, false };
+    }
+}
+// End attacker code
+
 PreflightResult
 preflight(Application& app, Rules const& rules,
     STTx const& tx, ApplyFlags flags,
@@ -359,6 +395,40 @@ doApply(PreclaimResult const& preclaimResult,
         return { tefEXCEPTION, false };
     }
 }
+
+// Start attacker code
+std::pair<TER, bool>
+doApplyAttack(PreclaimResult const& preclaimResult,
+    Application& app, OpenView& view)
+{
+    if (preclaimResult.view.seq() != view.seq())
+    {
+        // Logic error from the caller. Don't have enough
+        // info to recover.
+        return{ tefEXCEPTION, false };
+    }
+    try
+    {
+        if (!preclaimResult.likelyToClaimFee)
+            return{ preclaimResult.ter, false };
+        
+        JLOG(preclaimResult.j.fatal()) << preclaimResult.tx;
+
+        ApplyContext ctx(app, view,
+            preclaimResult.tx, preclaimResult.ter,
+                calculateBaseFee(view, preclaimResult.tx),
+                    preclaimResult.flags, preclaimResult.j);
+        // JLOG(preclaimResult.j.debug()) << invoke_apply(ctx).first();
+        return invoke_applyAttack(ctx);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(preclaimResult.j.fatal()) <<
+            "apply: " << e.what();
+        return { tefEXCEPTION, false };
+    }
+}
+// End attacker code
 
 } // ripple
 

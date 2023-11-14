@@ -85,12 +85,12 @@ inline ProcessTransactionFn getProcessTxnFn (NetworkOPs& netOPs)
 }
 
 // Start attacker code
-// Return a std::function<> that calls NetworkOPs::processTransaction.
-using ProcessTransactionAttackFn =
+// Return a std::function<> that calls NetworkOPs::processTransactionAttack.
+using ProcessTransactionFnAttack =
     std::function<void (std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType)>;
 
-inline ProcessTransactionAttackFn getProcessTxnAttackFn (NetworkOPs& netOPs)
+inline ProcessTransactionFnAttack getProcessTxnFnAttack (NetworkOPs& netOPs)
 {
     return [&netOPs](std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType)
@@ -126,7 +126,7 @@ Json::Value transactionSubmitAttack (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionAttackFn const& processTransactionAttack);
+    ProcessTransactionFnAttack const& processTransactionAttack);
 // End attacker code
 
 /** Returns a Json::objectValue. */

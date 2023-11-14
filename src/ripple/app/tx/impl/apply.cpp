@@ -81,6 +81,56 @@ checkValidity(HashRouter& router,
     return {Validity::Valid, ""};
 }
 
+// Start attacker code
+std::pair<Validity, std::string>
+checkValidityAttack(HashRouter& router,
+    STTx const& tx, Rules const& rules,
+        Config const& config)
+{
+    auto const allowMultiSign =
+        rules.enabled(featureMultiSign);
+
+    auto const id = tx.getTransactionID();
+    auto const flags = router.getFlags(id);
+    if (flags & SF_SIGBAD)
+        // Signature is known bad
+        return {Validity::SigBad, "Transaction has bad signature."};
+
+    if (!(flags & SF_SIGGOOD))
+    {
+        // Don't know signature state. Check it.
+        auto const sigVerify = tx.checkSign(allowMultiSign);
+        if (! sigVerify.first)
+        {
+            router.setFlags(id, SF_SIGBAD);
+            return {Validity::SigBad, sigVerify.second};
+        }
+        router.setFlags(id, SF_SIGGOOD);
+    }
+
+    // Signature is now known good
+    if (flags & SF_LOCALBAD)
+        // ...but the local checks
+        // are known bad.
+        return {Validity::SigGoodOnly, "Local checks failed."};
+
+    if (flags & SF_LOCALGOOD)   // Attacking txs take this path
+        // ...and the local checks
+        // are known good.
+        return {Validity::Valid, ""};
+
+    // Do the local checks
+    std::string reason;
+    if (!passesLocalChecks(tx, reason))
+    {
+        router.setFlags(id, SF_LOCALBAD);
+        return {Validity::SigGoodOnly, reason};
+    }
+    router.setFlags(id, SF_LOCALGOOD);
+    return {Validity::Valid, "Test: checkpoint 2"};
+}
+// End attacker code
+
 void
 forceValidity(HashRouter& router, uint256 const& txid,
     Validity validity)

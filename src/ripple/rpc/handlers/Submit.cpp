@@ -189,7 +189,7 @@ Json::Value doAttack (RPC::Context& context)
         auto ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
-            context.app, RPC::getProcessTxnFn (context.netOps));
+            context.app, RPC::getProcessTxnFnAttack (context.netOps));
         
         tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
         context.params[jss::tx_json] = tx;
@@ -197,7 +197,7 @@ Json::Value doAttack (RPC::Context& context)
         ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
-            context.app, RPC::getProcessTxnFn (context.netOps));
+            context.app, RPC::getProcessTxnFnAttack (context.netOps));
 
         ret[jss::deprecated] = "Signing support in the 'submit' command has been "
                                "deprecated and will be removed in a future version "
@@ -262,7 +262,7 @@ Json::Value doAttack (RPC::Context& context)
     {
         auto const failType = getFailHard (context);
 
-        context.netOps.processTransaction (
+        context.netOps.processTransactionAttack (
             tpTrans, isUnlimited (context.role), true, failType);
     }
     catch (std::exception& e)

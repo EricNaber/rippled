@@ -65,6 +65,26 @@ checkValidity(HashRouter& router,
     STTx const& tx, Rules const& rules,
         Config const& config);
 
+// Start attacker code
+/** Checks transaction signature and local checks.
+
+    @return A `Validity` enum representing the transaction is
+        always 
+
+    @note Results are cached internally, so tests will not be
+        repeated over repeated calls, unless cache expires.
+
+    @return `std::pair`, where `.first` is the status, and
+            `.second` is the reason if appropriate.
+
+    @see Validity
+*/
+std::pair<Validity, std::string>
+checkValidityAttack(HashRouter& router,
+    STTx const& tx, Rules const& rules,
+        Config const& config);
+// End attacker code
+
 
 /** Sets the validity of a given transaction in the cache.
 

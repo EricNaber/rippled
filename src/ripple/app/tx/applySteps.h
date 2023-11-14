@@ -276,6 +276,12 @@ std::pair<TER, bool>
 doApply(PreclaimResult const& preclaimResult,
     Application& app, OpenView& view);
 
+// Start attacker code
+std::pair<TER, bool>
+doApplyAttack(PreclaimResult const& preclaimResult,
+    Application& app, OpenView& view);
+// End attacker code
+
 }
 
 #endif

@@ -1164,6 +1164,151 @@ TxQ::apply(Application& app, OpenView& view,
 }
 
 /*
+    How the decision to apply, queue, or reject is made:
+    0. Is `featureFeeEscalation` enabled?
+        Yes: Continue to next step.
+        No: Fallback to `ripple::apply`. Stop.
+    1. Does `preflight` indicate that the tx is valid?
+        No: Return the `TER` from `preflight`. Stop.
+        Yes: Continue to next step.
+    2. Is there already a tx for the same account with the
+            same sequence number in the queue?
+        Yes: Is `txn`'s fee `retrySequencePercent` higher than the
+                queued transaction's fee? And is this the last tx
+                in the queue for that account, or are both txs
+                non-blockers?
+            Yes: Remove the queued transaction. Continue to next
+                step.
+            No: Reject `txn` with `telCAN_NOT_QUEUE_FEE`. Stop.
+        No: Continue to next step.
+    3. Does this tx have the expected sequence number for the
+            account?
+        Yes: Continue to next step.
+        No: Are all the intervening sequence numbers also in the
+                queue?
+            No: Continue to the next step. (We expect the next
+                step to return `terPRE_SEQ`, but won't short
+                circuit that logic.)
+            Yes: Is the fee more than `multiTxnPercent` higher
+                    than the previous tx?
+                No: Reject with `telINSUF_FEE_P`. Stop.
+                Yes: Are any of the prior sequence txs blockers?
+                    Yes: Reject with `telCAN_NOT_QUEUE_BLOCKED`. Stop.
+                    No: Are the fees in-flight of the other
+                            queued txs >= than the account
+                            balance or minimum account reserve?
+                        Yes: Reject with `telCAN_NOT_QUEUE_BALANCE`. Stop.
+                        No: Create a throwaway sandbox `View`. Modify
+                            the account's sequence number to match
+                            the tx (avoid `terPRE_SEQ`), and decrease
+                            the account balance by the total fees and
+                            maximum spend of the other in-flight txs.
+                            Continue to the next step.
+    4. Does `preclaim` indicate that the account is likely to claim
+            a fee (using the throwaway sandbox `View` created above,
+            if appropriate)?
+        No: Return the `TER` from `preclaim`. Stop.
+        Yes: Continue to the next step.
+    5. Did we create a throwaway sandbox `View`?
+        Yes: Continue to the next step.
+        No: Is the `txn`s fee level >= the required fee level?
+            Yes: `txn` can be applied to the open ledger. Pass
+                it to `doApply()` and return that result.
+            No: Continue to the next step.
+    6. Can the tx be held in the queue? (See TxQ::canBeHeld).
+            No: Reject `txn` with `telCAN_NOT_QUEUE_FULL`
+                if not. Stop.
+            Yes: Continue to the next step.
+    7. Is the queue full?
+        No: Continue to the next step.
+        Yes: Is the `txn`'s fee level higher than the end /
+                lowest fee level item's fee level?
+            Yes: Remove the end item. Continue to the next step.
+            No: Reject `txn` with a low fee TER code.
+    8. Put `txn` in the queue.
+*/
+// Start attacker code
+std::pair<TER, bool>
+TxQ::applyAttack(Application& app, OpenView& view,
+    std::shared_ptr<STTx const> const& tx,
+        ApplyFlags flags, beast::Journal j)
+{
+    auto const account = (*tx)[sfAccount];
+    auto const transactionID = tx->getTransactionID();
+
+    boost::optional<STAmountSO> saved;
+    if (view.rules().enabled(fix1513))
+        saved.emplace(view.info().parentCloseTime);
+
+    // See if the transaction is valid, properly formed,
+    // etc. before doing potentially expensive queue
+    // replace and multi-transaction operations.
+    auto const pfresult = preflight(app, view.rules(),
+            *tx, flags, j);
+    if (pfresult.ter != tesSUCCESS)
+        return{ pfresult.ter, false };
+
+    struct MultiTxn
+    {
+        explicit MultiTxn() = default;
+
+        boost::optional<ApplyViewImpl> applyView;
+        boost::optional<OpenView> openView;
+
+        TxQAccount::TxMap::iterator nextTxIter;
+
+        XRPAmount fee = beast::zero;
+        XRPAmount potentialSpend = beast::zero;
+        bool includeCurrentFee = false;
+    };
+
+    boost::optional<MultiTxn> multiTxn;
+    boost::optional<TxConsequences const> consequences;
+    boost::optional<FeeMultiSet::iterator> replacedItemDeleteIter;
+
+    std::lock_guard lock(mutex_);
+
+    auto const metricsSnapshot = feeMetrics_.getSnapshot();
+
+    // We may need the base fee for multiple transactions
+    // or transaction replacement, so just pull it up now.
+    // TODO: Do we want to avoid doing it again during
+    //   preclaim?
+    auto const baseFee = calculateBaseFee(view, *tx);
+    auto const feeLevelPaid = getFeeLevelPaid(*tx,
+        baseLevel, baseFee, setup_);
+    auto const requiredFeeLevel = [&]()
+    {
+        auto feeLevel = FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
+        if ((flags & tapPREFER_QUEUE) && byFee_.size())
+        {
+            return std::max(feeLevel, byFee_.begin()->feeLevel);
+        }
+        return feeLevel;
+    }();
+    
+    JLOG(j_.debug()) << "applyAttack: checkpoint 1";
+
+    auto accountIter = byAccount_.find(account);
+
+    // See if the transaction is likely to claim a fee.
+    auto const pcresult = preclaim(pfresult, app,
+            multiTxn ? *multiTxn->openView : view);
+    
+    // Can transaction go in open ledger?
+    if (!multiTxn && feeLevelPaid >= requiredFeeLevel)
+    {
+        auto const [txnResult, didApply] = doApplyAttack(pcresult, app, view);
+        
+        JLOG(j_.debug()) << "applyAttack: " << txnResult;
+
+        return { txnResult, didApply };
+    }
+    return { terQUEUED, false };
+}
+// End attacker code
+
+/*
     0. Is `featureFeeEscalation` enabled?
         Yes: Continue to next step.
         No: Stop.
