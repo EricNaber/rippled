@@ -216,6 +216,7 @@ PeerImp::send (Message::pointer const& m)
             (name.empty() ? remote_address_.to_string() : name) <<
                 " sendq: " << sendq_size;
     }
+    JLOG (journal_.debug()) << "PeerImp: send(Message::pointer)";
 
     send_queue_.push(m);
 
@@ -652,6 +653,7 @@ PeerImp::onTimer (error_code const& ec)
 
     if (pingSeq)
     {
+        JLOG(journal_.debug()) << "PeerImp.cpp: onTimer";
         protocol::TMPing message;
         message.set_type (protocol::TMPing::ptPING);
         message.set_seq (*pingSeq);
@@ -1469,7 +1471,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 {
-
+    JLOG(p_journal_.debug()) << "PeerImp.cpp: onMessage (TMTransaction)";
     if (sanity_.load() == Sanity::insane)
         return;
 

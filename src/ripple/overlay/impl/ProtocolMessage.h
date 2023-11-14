@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
 #define RIPPLE_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/messages.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
