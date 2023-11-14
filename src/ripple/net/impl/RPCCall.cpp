@@ -1115,6 +1115,7 @@ public:
             stream << "Method: '" << strMethod << "'";
             stream << "Params: " << jvParams;
         }
+        JLOG (j_.debug()) << "RPCCall.cpp: parseCommand";
 
         struct Command
         {
@@ -1319,6 +1320,7 @@ struct RPCCallImp
         std::string const& strHost,
         beast::Journal j)
     {
+        JLOG (j.debug()) << "RPCCall.cpp: onRequest";
         JLOG (j.debug()) << "requestRPC: strPath='" << strPath << "'";
 
         std::ostream    osRequest (&sb);
@@ -1353,6 +1355,7 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
 
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
 
+    JLOG (j.debug()) << "RPCCall.cpp: rpcCmdLineToJson";
     JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
     return jvRequest;
 }
@@ -1360,6 +1363,7 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
 Json::Value
 cmdLineToJSONRPC (std::vector<std::string> const& args, beast::Journal j)
 {
+    JLOG (j.debug()) << "RPCCall.cpp: cmdLineToJSONRPC";
     Json::Value jv = Json::Value (Json::objectValue);
     auto const paramsObj = rpcCmdLineToJson (args, jv, j);
 
@@ -1556,6 +1560,7 @@ void fromNetwork (
     std::unordered_map<std::string, std::string> headers)
 {
     auto j = logs.journal ("HTTPClient");
+    JLOG (j.debug()) << "RPCCall.cpp: fromNetwork";
 
     // Connect to localhost
     if (!quiet)
