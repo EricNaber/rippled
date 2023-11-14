@@ -1563,8 +1563,8 @@ void fromNetwork (
         JLOG(j.info()) << (bSSL ? "Securely connecting to " : "Connecting to ") <<
             strIp << ":" << iPort << std::endl;
     }
-    JLOG(j.info()) << "fromNetwork starting here!";
-    // test
+
+    JLOG(j.info()) << "fromNetwork: sending to node " << strIp;
 
     // HTTP basic authentication
     headers["Authorization"] = std::string("Basic ") + base64_encode(
