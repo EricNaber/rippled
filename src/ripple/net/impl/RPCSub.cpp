@@ -61,6 +61,7 @@ public:
         mPort = (! pUrl.port) ? (mSSL ? 443 : 80) : *pUrl.port;
         mPath = pUrl.path;
 
+        JLOG (j_.debug()) << "RPCSub.cpp: RPCSubImp";
         JLOG (j_.info()) <<
             "RPCCall::fromNetwork sub: ip=" << mIp <<
             " port=" << mPort <<
@@ -87,6 +88,7 @@ public:
 
         mDeque.push_back (std::make_pair (mSeq++, jvObj));
 
+        JLOG (j_.info()) << "RPCSub.cpp: send";
         if (!mSending)
         {
             // Start a sending thread.

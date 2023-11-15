@@ -1584,26 +1584,23 @@ void fromNetwork (
     using namespace std::chrono_literals;
     auto constexpr RPC_NOTIFY = 10min;
 
-    if (strIp == "10.5.1.3"){
-        JLOG(j.info()) << "fromNetwork: sending to node 10.5.1.3";
-        HTTPClient::request (
-            bSSL,
-            io_service,
-            strIp,
-            iPort,
-            std::bind (
-                &RPCCallImp::onRequest,
-                strMethod,
-                jvParams,
-                headers,
-                strPath, std::placeholders::_1, std::placeholders::_2, j),
-            RPC_REPLY_MAX_BYTES,
-            RPC_NOTIFY,
-            std::bind (&RPCCallImp::onResponse, callbackFuncP,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, j),
-            j);
-    }
+    HTTPClient::request (
+        bSSL,
+        io_service,
+        strIp,
+        iPort,
+        std::bind (
+            &RPCCallImp::onRequest,
+            strMethod,
+            jvParams,
+            headers,
+            strPath, std::placeholders::_1, std::placeholders::_2, j),
+        RPC_REPLY_MAX_BYTES,
+        RPC_NOTIFY,
+        std::bind (&RPCCallImp::onResponse, callbackFuncP,
+                std::placeholders::_1, std::placeholders::_2,
+                std::placeholders::_3, j),
+        j);
 }
 
 } // RPCCall

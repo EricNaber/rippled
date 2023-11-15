@@ -21,6 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/overlay/Peer.h>
 
 namespace ripple {
 
