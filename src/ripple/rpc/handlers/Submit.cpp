@@ -176,11 +176,10 @@ Json::Value doAttack (RPC::Context& context)
 
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    changePeers(context, -1, j);
+    changePeers(context, 0, j);
 
     if (!context.params.isMember (jss::tx_blob))
     {
-        changePeers(context, 1, j);
         auto const failType = getFailHard (context);
 
         // import tx_json-field into context.params:
@@ -199,10 +198,10 @@ Json::Value doAttack (RPC::Context& context)
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app, RPC::getProcessTxnFnAttack (context.netOps));
         
+        changePeers(context, 0, j);
+        
         tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
         context.params[jss::tx_json] = tx;
-
-        changePeers(context, 2, j);
 
         ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
@@ -317,11 +316,8 @@ void changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
 {
     JLOG (j.warn()) << "changePeers: currently connected to " << context.app.overlay ().size() << " nodes.";
     
-    Json::Value jvResult (Json::objectValue);
-    jvResult[jss::peers] = context.app.overlay ().json ();
-
     // Iter over all peers and either connect or disconnect from peers
-    auto peers = context.app.overlay ().getActivePeers();
+    const static auto peers = context.app.overlay ().getActivePeers();
     for (auto& peer : peers) {
         if (peer) {
             auto peer_endpoint = peer->getRemoteAddress();
