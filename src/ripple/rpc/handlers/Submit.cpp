@@ -174,10 +174,9 @@ Json::Value doAttack (RPC::Context& context)
     auto j = context.app.journal ("Attack");
     const char *x = "10.5.1.1";
     JLOG (j.warn()) << "Starting doAttack" << strcmp("10.5.1.1", x);
+    changePeers(context, 0, j);
 
     context.loadType = Resource::feeMediumBurdenRPC;
-
-    changePeers(context, -1, j);
 
     if (!context.params.isMember (jss::tx_blob))
     {
@@ -194,6 +193,8 @@ Json::Value doAttack (RPC::Context& context)
         context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
         context.params[jss::tx_json] = tx;
 
+        changePeers(context, 1, j);
+
         auto ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
@@ -201,6 +202,8 @@ Json::Value doAttack (RPC::Context& context)
         
         tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
         context.params[jss::tx_json] = tx;
+
+        changePeers(context, 2, j);
 
         ret = RPC::transactionSubmitAttack (
             context.params, failType, context.role,
@@ -211,7 +214,7 @@ Json::Value doAttack (RPC::Context& context)
                                "deprecated and will be removed in a future version "
                                "of the server. Please migrate to a standalone "
                                "signing tool.";
-
+        changePeers(context, -1, j);
         return ret;
     }
 
