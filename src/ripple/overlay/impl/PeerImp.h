@@ -391,10 +391,10 @@ public:
     boost::optional<hash_map<PublicKey, ShardInfo>>
     getPeerShardInfo() const;
 
-private:
     void
     close();
 
+private:
     void
     fail(std::string const& name, error_code ec);
 

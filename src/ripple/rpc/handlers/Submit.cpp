@@ -27,6 +27,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
+#include <ripple/overlay/impl/PeerImp.h>
 
 namespace ripple {
 
@@ -175,7 +176,7 @@ Json::Value doAttack (RPC::Context& context)
 
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    changePeers(context, 0, j);
+    changePeers(context, -1, j);
 
     if (!context.params.isMember (jss::tx_blob))
     {
@@ -312,33 +313,47 @@ Json::Value doAttack (RPC::Context& context)
     }
 }
 
-Json::Value changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
+void changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
 {
-    JLOG (j.warn()) << "changePeers: currently " << context.app.overlay ().size() << " nodes.";
+    JLOG (j.warn()) << "changePeers: currently connected to " << context.app.overlay ().size() << " nodes.";
     
     Json::Value jvResult (Json::objectValue);
     jvResult[jss::peers] = context.app.overlay ().json ();
 
-    // cluster_idx: 0 (all), 1 (1,2,3), 2 (4,5,6)
-    assert(cluster_idx == -1 || cluster_idx == 0 || cluster_idx == 1 || cluster_idx == 2);
-    if (cluster_idx == 0) {
-        JLOG (j.warn()) << "changePeers: Use all nodes";
-        auto peers = context.app.overlay ().getActivePeers();
-        // peers.clear();
-        for (auto& peer : peers) {
-            if (peer) {
-                JLOG (j.warn()) << "Peer active";
-                // peer.getRemoteAddress();
+    // Iter over all peers and either connect or disconnect from peers
+    auto peers = context.app.overlay ().getActivePeers();
+    for (auto& peer : peers) {
+        if (peer) {
+            auto peer_endpoint = peer->getRemoteAddress();
+            std::string addressString = peer_endpoint.address().to_string();
+
+            if (shouldConnectPeer(addressString, cluster_idx)) {
+                JLOG (j.warn()) << "changePeers: connect to " << addressString << " (network-cluster " << cluster_idx << ")";
+                context.app.overlay ().connect(peer_endpoint);
+            } else {
+                JLOG (j.warn()) << "changePeers: disconnect from " << addressString << " (network-cluster " << cluster_idx << ")";
+                auto peerImp = std::dynamic_pointer_cast<PeerImp>(peer);
+                peerImp->close();
             }
         }
-        
-    } else if (cluster_idx == -1) {
-        JLOG (j.warn()) << "changePeers: Remove all nodes";
-    } else {
-        JLOG (j.warn()) << "changePeers to " << cluster_idx;
     }
+    JLOG (j.warn()) << "changePeers: now connected to " << context.app.overlay ().size() << " nodes.";
+}
 
-    return jvResult;
+bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
+    if (cluster_idx == 0) {         // connect to all
+        return true;
+    }
+    else if (cluster_idx == 1) {    // connect to network-cluster 1
+        // TODO: Logic to return true only if peer_address is 10.5.1.[1,2,3]
+        return true;
+    }
+    else if (cluster_idx == 2) {    // connect to network-cluster 2
+        // TODO: Logic to return true only if peer_address is 10.5.1.[4,5,6]
+        return true;
+    } else {                        // connect to no nodes
+        return false;
+    }
 }
 // End attacker code
 
