@@ -316,7 +316,7 @@ Json::Value doAttack (RPC::Context& context)
 
 void changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
 {
-    JLOG (j.warn()) << "changePeers: currently connected to " << context.app.overlay ().size() << " nodes.";
+    JLOG (j.warn()) << "changePeers: start (connected to " << context.app.overlay ().size() << " nodes)";
     
     // Iter over all peers and either connect or disconnect from peers
     const static auto peers = context.app.overlay ().getActivePeers();
@@ -326,34 +326,34 @@ void changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
             std::string addressString = peer_endpoint.address().to_string();
 
             if (shouldConnectPeer(addressString, cluster_idx)) {
-                JLOG (j.warn()) << "changePeers: connect to " << addressString << " (network-cluster " << cluster_idx << ")";
+                JLOG (j.warn()) << "changePeers: connect to " << addressString << " (cluster_idx " << cluster_idx << ")";
                 context.app.overlay ().connect(peer_endpoint);
             } else {
-                JLOG (j.warn()) << "changePeers: disconnect from " << addressString << " (network-cluster " << cluster_idx << ")";
+                JLOG (j.warn()) << "changePeers: disconnect from " << addressString << " (cluster_idx " << cluster_idx << ")";
                 auto peerImp = std::dynamic_pointer_cast<PeerImp>(peer);
                 peerImp->close();
             }
         }
     }
-    JLOG (j.warn()) << "changePeers: now connected to " << context.app.overlay ().size() << " nodes.";
+    JLOG (j.warn()) << "changePeers: end (connected to " << context.app.overlay ().size() << " nodes)";
 }
 
 bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
-    bool is_node1 = strcmp(peer_address.c_str(), "10.5.1.1") == 0;  // in cluster 1
-    bool is_node2 = strcmp(peer_address.c_str(), "10.5.1.2") == 0;  // in cluster 1
-    bool is_node3 = strcmp(peer_address.c_str(), "10.5.1.3") == 0;  // in cluster 1
-    bool is_node4 = strcmp(peer_address.c_str(), "10.5.1.4") == 0;  // in cluster 2
-    bool is_node5 = strcmp(peer_address.c_str(), "10.5.1.5") == 0;  // in cluster 2
-    bool is_node6 = strcmp(peer_address.c_str(), "10.5.1.6") == 0;  // in cluster 2
+    bool is_node1 = (strcmp(peer_address.c_str(), "10.5.1.1") == 0);  // in cluster 1
+    bool is_node2 = (strcmp(peer_address.c_str(), "10.5.1.2") == 0);  // in cluster 1
+    bool is_node3 = (strcmp(peer_address.c_str(), "10.5.1.3") == 0);  // in cluster 1
+    bool is_node4 = (strcmp(peer_address.c_str(), "10.5.1.4") == 0);  // in cluster 2
+    bool is_node5 = (strcmp(peer_address.c_str(), "10.5.1.5") == 0);  // in cluster 2
+    bool is_node6 = (strcmp(peer_address.c_str(), "10.5.1.6") == 0);  // in cluster 2
 
     if (cluster_idx == 0) {         // connect to all
         return true;
     }
     else if (cluster_idx == 1) {    // connect to network-cluster 1
-        return is_node1 || is_node2 || is_node3;
+        return (is_node1 || is_node2 || is_node3);
     }
     else if (cluster_idx == 2) {    // connect to network-cluster 2
-        return is_node4 || is_node5 || is_node6;
+        return (is_node4 || is_node5 || is_node6);
     } else {                        // connect to no nodes
         return false;
     }

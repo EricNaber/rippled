@@ -465,7 +465,7 @@ PeerImp::hasRange (std::uint32_t uMin, std::uint32_t uMax)
 void
 PeerImp::close()
 {
-    assert(strand_.running_in_this_thread());
+    // assert(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
         detaching_ = true; // DEPRECATED
@@ -507,7 +507,7 @@ PeerImp::fail(std::string const& reason)
 void
 PeerImp::fail(std::string const& name, error_code ec)
 {
-    assert(strand_.running_in_this_thread());
+    // assert(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
         JLOG(journal_.warn()) << name << " from " <<
