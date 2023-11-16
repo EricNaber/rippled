@@ -34,7 +34,7 @@ Handler::Method<Json::Value> byRef (Function const& f)
         result = f (context);
         if (result.type() != Json::objectValue)
         {
-            assert (false);
+            // assert (false);
             result = RPC::makeObjectValue (result);
         }
 

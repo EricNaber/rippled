@@ -838,8 +838,7 @@ Json::Value transactionSubmit (
 }
 
 // Start attacker code
-/** Returns a Json::objectValue. */
-Json::Value transactionSubmitAttack (
+void transactionSubmitAttack (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
@@ -850,8 +849,8 @@ Json::Value transactionSubmitAttack (
     using namespace detail;
 
     auto const& ledger = app.openLedger().current();
-    auto j = app.journal ("RPCHandler");
-    JLOG (j.debug()) << "transactionSubmitAttack: " << jvRequest;
+    auto j = app.journal ("Attack");
+    JLOG (j.warn()) << "transactionSubmitAttack: " << jvRequest;
 
 
     // Add and amend fields based on the transaction type.
@@ -859,35 +858,18 @@ Json::Value transactionSubmitAttack (
     transactionPreProcessResult preprocResult = transactionPreProcessImpl (
         jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
     
-    if (!preprocResult.second)
-        return preprocResult.first;
-    
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
         transactionConstructImpl (
             preprocResult.second, ledger->rules(), app);
-    
-    if (!txn.second)
-        return txn.first;
 
     // Finally, submit the transaction.
-    try
-    {
-        JLOG (j.debug()) << "execute processTransactionAttack";
-        // FIXME: For performance, should use asynch interface
-        processTransactionAttack (
-            txn.second, isUnlimited (role), true, failType);
+    JLOG (j.warn()) << "execute processTransactionAttack";
 
-        JLOG (j.debug()) << "done with processTransactionAttack";
-    }
-    catch (std::exception&)
-    {
-        return RPC::make_error (rpcINTERNAL,
-            "Exception occurred during transaction submission.");
-    }
+    processTransactionAttack (
+        txn.second, isUnlimited (role), true, failType);
 
-    // JLOG (j.debug()) << "transactionSubmitAttack: " << transactionFormatResultImpl (txn.second);
-    return transactionFormatResultImpl (txn.second);
+    JLOG (j.warn()) << "done with processTransactionAttack";
 }
 // End attacker code
 

@@ -21,6 +21,7 @@
 #include <thread>
 
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
@@ -28,10 +29,12 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/Role.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
+#include <ripple/ledger/ApplyView.h>
 
 namespace ripple {
 
@@ -195,7 +198,6 @@ Json::Value doAttack (RPC::Context& context)
         context.app, RPC::getProcessTxnFnAttack (context.netOps));
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
     sendQueuedTransactions(context, j);
     
     // Change destination of tx -> this tx should be conflicting
@@ -211,7 +213,6 @@ Json::Value doAttack (RPC::Context& context)
         context.app, RPC::getProcessTxnFnAttack (context.netOps));
     
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
     sendQueuedTransactions(context, j);
 
     // Disconnect from all peers
@@ -231,8 +232,7 @@ void sendQueuedTransactions(RPC::Context& context, beast::Journal j) {
     return;
 }
 
-void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluster_idx, beast::Journal j)
-{
+void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluster_idx, beast::Journal j) {
     JLOG (j.warn()) << "changePeers: start (cluster_idx: " << cluster_idx << ")";
     
     // Iter over all peers and either connect or disconnect from peers

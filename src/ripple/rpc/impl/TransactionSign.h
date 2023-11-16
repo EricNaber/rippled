@@ -120,7 +120,7 @@ Json::Value transactionSubmit (
 
 // Start attacker code
 /** Returns a Json::objectValue. */
-Json::Value transactionSubmitAttack (
+void transactionSubmitAttack (
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
