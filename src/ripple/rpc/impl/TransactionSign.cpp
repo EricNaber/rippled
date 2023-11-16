@@ -858,14 +858,15 @@ void transactionSubmitAttack (
     transactionPreProcessResult preprocResult = transactionPreProcessImpl (
         jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
     
-    // Make sure the STTx makes a legitimate Transaction.
+    // I think: only check if transaction has correct layout (not important for attack)
     std::pair <Json::Value, Transaction::pointer> txn =
         transactionConstructImpl (
             preprocResult.second, ledger->rules(), app);
-
+    
     // Finally, submit the transaction.
     JLOG (j.warn()) << "execute processTransactionAttack";
 
+    // defined in ripple/app/misc/impl/NetworkOPs.cpp
     processTransactionAttack (
         txn.second, isUnlimited (role), true, failType);
 

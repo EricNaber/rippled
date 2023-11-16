@@ -192,13 +192,17 @@ Json::Value doAttack (RPC::Context& context)
 
     // Change peers to match only network-cluster 1
     changePeers(context, active_peers, 1, j);
+    // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    sendQueuedTransactions(context, j);
+    // Send all queued transactions
+    sendQueuedTransactions(context, j);     // TODO
+    
+    // Remove all transactions from TxQ / view ?
+    // clearTxQ();        // TODO
     
     // Change destination of tx -> this tx should be conflicting
     tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
@@ -206,17 +210,17 @@ Json::Value doAttack (RPC::Context& context)
 
     // Change peers to match only network-cluster 2
     changePeers(context, active_peers, 2, j);
-
+    // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps));
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    sendQueuedTransactions(context, j);
+    // Send all queued transactions
+    sendQueuedTransactions(context, j);     // TODO
 
-    // Disconnect from all peers
-    changePeers(context, active_peers, -1, j);
+    // Only connect to peers in cluster 1 (for debugging)
+    changePeers(context, active_peers, 1, j);
     return Json::Value();
 }
 
@@ -272,6 +276,11 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
     } else {                        // connect to no nodes
         return false;
     }
+}
+
+void clearTxQ(RPC::Context& context, beast::Journal j) {    // TODO
+    auto& txQ = context.app.getTxQ();
+    // auto& view = context.app.getView();
 }
 // End attacker code
 
