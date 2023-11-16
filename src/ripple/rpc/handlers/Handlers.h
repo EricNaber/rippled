@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_HANDLERS_HANDLERS_H_INCLUDED
 
 #include <ripple/rpc/handlers/LedgerHandler.h>
+#include <ripple/overlay/impl/OverlayImpl.h>
 
 namespace ripple {
 
@@ -75,10 +76,10 @@ Json::Value doSignFor               (RPC::Context&);
 Json::Value doCrawlShards           (RPC::Context&);
 Json::Value doStop                  (RPC::Context&);
 Json::Value doSubmit                (RPC::Context&);
-Json::Value doAttack                (RPC::Context&);                        // For attack
-void        sendQueuedTransactions  (RPC::Context&, beast::Journal);        // For attack
-void        changePeers             (RPC::Context&, int, beast::Journal);   // For attack
-bool        shouldConnectPeer       (std::string, int);                     // For attack
+Json::Value doAttack                (RPC::Context&);                                        // For attack
+void        sendQueuedTransactions  (RPC::Context&, beast::Journal);                        // For attack
+void        changePeers             (RPC::Context&, Overlay::PeerSequence, int, beast::Journal);     // For attack
+bool        shouldConnectPeer       (std::string, int);                                     // For attack
 Json::Value doSubmitMultiSigned     (RPC::Context&);
 Json::Value doSubscribe             (RPC::Context&);
 Json::Value doTransactionEntry      (RPC::Context&);

