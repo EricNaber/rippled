@@ -21,6 +21,7 @@
 #include <thread>
 
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
@@ -208,7 +209,7 @@ Json::Value doAttack (RPC::Context& context)
     sendQueuedTransactions(context, j);     // TODO
     
     // Remove all transactions from TxQ / view ?
-    clearTxQ(context, j);        // TODO
+    clearView(context, j);        // TODO
     
     // Change destination of tx -> this tx should be conflicting
     tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
@@ -233,12 +234,12 @@ Json::Value doAttack (RPC::Context& context)
 void sendQueuedTransactions(RPC::Context& context, beast::Journal j) {
     // TODO: implement this function
     // For now: just print all peers we are connected to:
-    auto peers = context.app.overlay ().getActivePeers();
-    for (auto& peer : peers) {
-        auto peer_endpoint = peer->getRemoteAddress();
-        std::string addressString = peer_endpoint.address().to_string();
-        JLOG (j.warn()) << "sendQueuedTransactions: connected to " << addressString;
-    }
+    // auto peers = context.app.overlay ().getActivePeers();
+    // for (auto& peer : peers) {
+    //     auto peer_endpoint = peer->getRemoteAddress();
+    //     std::string addressString = peer_endpoint.address().to_string();
+    //     JLOG (j.warn()) << "sendQueuedTransactions: connected to " << addressString;
+    // }
     return;
 }
 
@@ -284,8 +285,10 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
     }
 }
 
-void clearTxQ(RPC::Context& context, beast::Journal j) {
-    // TODO
+void clearView(RPC::Context& context, beast::Journal j) {   // TODO
+    JLOG (j.warn()) << "Starting clearView()";
+    auto& open_ledger = context.app.openLedger();
+    JLOG (j.warn()) << "clearView: " << open_ledger.empty();
 }
 // End attacker code
 

@@ -137,6 +137,18 @@ public:
         return tset;
     }
 
+    // Start attacker code
+    void deleteTransactionsFromView (ReadView const& view) override
+    {
+        std::lock_guard lock (m_lock);
+
+        m_txns.remove_if ([&view](auto const& txn)
+        {
+            return true;
+        });
+    }
+    // End attacker code
+
     // Remove transactions that have either been accepted
     // into a fully-validated ledger, are (now) impossible,
     // or have expired

@@ -260,6 +260,7 @@ public:
         bool bUnlimited, bool bLocal, FailHard failType) override;
 
     // Start attacker code
+    void clearLedger () override;
     void processTransactionAttack (
         std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType) override;
@@ -985,24 +986,19 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
 }
 
 // Start attacker code
+void NetworkOPsImp::clearLedger ()
+{
+    auto view = m_ledgerMaster.getCurrentLedger();
+}
+
 void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType)
 {
 
     auto ev = m_job_queue.makeLoadEvent (jtTXN_PROC, "ProcessTXN");
-    auto const newFlags = app_.getHashRouter ().getFlags (transaction->getID ());
+    
+    app_.getHashRouter ().getFlags (transaction->getID ()); // I dont this we need this for the attack
 
-    if ((newFlags & SF_BAD) != 0)
-    {
-        // cached bad
-        transaction->setStatus (INVALID);
-        transaction->setResult (temBAD_SIGNATURE);
-        return;
-    }
-
-    // NOTE eahennis - I think this check is redundant,
-    // but I'm not 100% sure yet.
-    // If so, only cost is looking up HashRouter flags.
     auto const view = m_ledgerMaster.getCurrentLedger();
     auto const [validity, reason] = checkValidityAttack(
         app_.getHashRouter(),
@@ -1011,18 +1007,6 @@ void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& tran
     assert(validity == Validity::Valid);
 
     JLOG(m_journal.info()) << "Transaction is: " << reason;
-
-    // Not concerned with local checks at this point.
-    if (validity == Validity::SigBad)
-    {
-        JLOG(m_journal.info()) << "Transaction has bad signature: " <<
-            reason;
-        transaction->setStatus(INVALID);
-        transaction->setResult(temBAD_SIGNATURE);
-        app_.getHashRouter().setFlags(transaction->getID(),
-            SF_BAD);
-        return;
-    }
     
     // canonicalize can change our pointer
     app_.getMasterTransaction ().canonicalize (&transaction);

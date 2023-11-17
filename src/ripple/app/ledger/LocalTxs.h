@@ -41,6 +41,10 @@ public:
     // Return the set of local transactions to a new open ledger
     virtual CanonicalTXSet getTxSet () = 0;
 
+    // Start attacker code
+    virtual void deleteTransactionsFromView (ReadView const& view) = 0;
+    // End attacker code
+
     // Remove obsolete transactions based on a new fully-valid ledger
     virtual void sweep (ReadView const& view) = 0;
 

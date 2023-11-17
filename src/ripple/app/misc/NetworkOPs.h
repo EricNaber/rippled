@@ -139,6 +139,8 @@ public:
         bool bUnlimited, bool bLocal, FailHard failType) = 0;
     
     // Start attacker code
+    virtual void clearLedger () = 0;
+
     virtual void processTransactionAttack (std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType) = 0;
     // End attacker code
