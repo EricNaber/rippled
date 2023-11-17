@@ -197,6 +197,8 @@ Json::Value doAttack (RPC::Context& context)
 
     // Change peers to match only network-cluster 1
     changePeers(context, peers, 1, j);
+
+    JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
     // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
@@ -217,6 +219,8 @@ Json::Value doAttack (RPC::Context& context)
 
     // Change peers to match only network-cluster 2
     changePeers(context, peers, 2, j);
+
+    JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
     // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
@@ -286,9 +290,9 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
 }
 
 void clearView(RPC::Context& context, beast::Journal j) {   // TODO
-    JLOG (j.warn()) << "Starting clearView()";
     auto& open_ledger = context.app.openLedger();
-    JLOG (j.warn()) << "clearView: " << open_ledger.empty();
+    JLOG (j.warn()) << "clearView: open-ledger empty?: " << open_ledger.empty();
+    // open_ledger.apply_one(context.app, )
 }
 // End attacker code
 

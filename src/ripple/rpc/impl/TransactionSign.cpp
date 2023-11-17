@@ -864,13 +864,9 @@ void transactionSubmitAttack (
             preprocResult.second, ledger->rules(), app);
     
     // Finally, submit the transaction.
-    JLOG (j.warn()) << "execute processTransactionAttack";
-
     // defined in ripple/app/misc/NetworkOPs.cpp
     processTransactionAttack (
         txn.second, isUnlimited (role), true, failType);
-
-    JLOG (j.warn()) << "done with processTransactionAttack";
 }
 // End attacker code
 
