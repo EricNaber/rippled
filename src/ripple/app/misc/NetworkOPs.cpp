@@ -1358,25 +1358,19 @@ void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock, std::v
 
         for (TransactionStatus& e : transactions)
         {
-            auto const toSkip = app_.getHashRouter().shouldRelay(
-                e.transaction->getID());
-
-            if (toSkip)
-            {
-                protocol::TMTransaction tx;
-                Serializer s;
-                e.transaction->getSTransaction()->add (s);
-                tx.set_rawtransaction (s.data(), s.size());
-                tx.set_status (protocol::tsCURRENT);
-                tx.set_receivetimestamp (app_.timeKeeper().now().time_since_epoch().count());
-                tx.set_deferred(e.result == terQUEUED);
-                // FIXME: This should be when we received it
-                // app_.overlay().foreach (send_if_not (
-                //     std::make_shared<Message> (tx, protocol::mtTRANSACTION),
-                //     peer_in_set(*toSkip)));
-                app_.overlay().relay(e.transaction->getID(), tx, *toSkip);
-                // e.transaction->setBroadcast();
-            }
+            protocol::TMTransaction tx;
+            Serializer s;
+            e.transaction->getSTransaction()->add (s);
+            tx.set_rawtransaction (s.data(), s.size());
+            tx.set_status (protocol::tsCURRENT);
+            tx.set_receivetimestamp (app_.timeKeeper().now().time_since_epoch().count());
+            tx.set_deferred(e.result == terQUEUED);
+            // FIXME: This should be when we received it
+            // app_.overlay().foreach (send_if_not (
+            //     std::make_shared<Message> (tx, protocol::mtTRANSACTION),
+            //     peer_in_set(*toSkip)));
+            app_.overlay().relay(e.transaction->getID(), tx);
+            // e.transaction->setBroadcast();
         }
     }
 

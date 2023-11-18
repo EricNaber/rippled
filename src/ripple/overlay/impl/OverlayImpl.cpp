@@ -1203,62 +1203,19 @@ OverlayImpl::getActivePeers(
 void
 OverlayImpl::relay(
     uint256 const& hash,
-    protocol::TMTransaction& m,
-    std::set<Peer::id_t> const& toSkip)
+    protocol::TMTransaction& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
-    std::size_t total = 0;
-    std::size_t disabled = 0;
-    std::size_t enabledInSkip = 0;
 
     // total peers excluding peers in toSkip
-    auto peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
-    // auto minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
-
-    // if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
-    // {
-    for (auto const& p : peers)
+    auto peers = getActivePeers();
+    for (auto const& p : peers) {
+        auto peer_endpoint = p->getRemoteAddress();
+        std::string addressString = peer_endpoint.address().to_string();
+        JLOG(journal_.warn()) << "OverlayImpl::relay: send tx to " << addressString;
         p->send(sm);
-    // if (app_.config().TX_REDUCE_RELAY_ENABLE ||
-    //     app_.config().TX_REDUCE_RELAY_METRICS)
-    //     txMetrics_.addMetrics(total, toSkip.size(), 0);
+    }
     return;
-    // }
-
-    // We have more peers than the minimum (disabled + minimum enabled),
-    // relay to all disabled and some randomly selected enabled that
-    // do not have the transaction.
-    // auto enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
-    //     (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
-// 
-    // txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
-// 
-    // if (enabledTarget > enabledInSkip)
-    //     std::shuffle(peers.begin(), peers.end(), default_prng());
-// 
-    // JLOG(journal_.trace()) << "relaying tx, total peers " << peers.size()
-    //                        << " selected " << enabledTarget << " skip "
-    //                        << toSkip.size() << " disabled " << disabled;
-// 
-    // // count skipped peers with the enabled feature towards the quota
-    // std::uint16_t enabledAndRelayed = enabledInSkip;
-    // for (auto const& p : peers)
-    // {
-    //     // always relay to a peer with the disabled feature
-    //     if (!p->txReduceRelayEnabled())
-    //     {
-    //         p->send(sm);
-    //     }
-    //     else if (enabledAndRelayed < enabledTarget)
-    //     {
-    //         enabledAndRelayed++;
-    //         p->send(sm);
-    //     }
-    //     else
-    //     {
-    //         p->addTxQueue(hash);
-    //     }
-    // }
 }
 // End attacker code
 

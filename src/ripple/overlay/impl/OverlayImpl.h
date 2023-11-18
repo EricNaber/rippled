@@ -221,8 +221,7 @@ public:
     void
     relay(
         uint256 const&,
-        protocol::TMTransaction& m,
-        std::set<Peer::id_t> const& skip) override;
+        protocol::TMTransaction& m) override;
 
     //--------------------------------------------------------------------------
     //
