@@ -176,6 +176,24 @@ Json::Value doSubmit (RPC::Context& context)
 // Start attacker code
 Json::Value doAttack (RPC::Context& context)
 {
+    context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
+
+    // create tx1:
+    Json::Value tx1;
+    tx1[jss::Account] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+    tx1[jss::Amount] = "1000000000";
+    tx1[jss::Destination] = "rG1eMisac1neCXeZNPYmwV8sovo5vs9dnB";
+    tx1[jss::Fee] = "10";
+    tx1[jss::TransactionType] = "Payment";
+
+    // create tx2:
+    Json::Value tx2;
+    tx2[jss::Account] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
+    tx2[jss::Amount] = "1000000000";
+    tx2[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
+    tx2[jss::Fee] = "10";
+    tx2[jss::TransactionType] = "Payment";
+
     auto j = context.app.journal ("Attack");
     JLOG (j.warn()) << "Starting doAttack()";
     
@@ -184,35 +202,18 @@ Json::Value doAttack (RPC::Context& context)
     const auto ledger = context.app.getLedgerMaster().getCurrentLedger();   // store current ledger to restore it later
     auto const failType = getFailHard (context);
     auto& netOps = context.netOps;
-    context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
 
-    JLOG (j.warn()) << "Currently " << netOps.getLocalTxCount() << " transactions stored";
-
-    // create tx and import into context.params['tx_json']:
-    Json::Value tx;
-    tx[jss::Account] = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
-    tx[jss::Amount] = "1000000000";
-    tx[jss::Destination] = "rG1eMisac1neCXeZNPYmwV8sovo5vs9dnB";
-    tx[jss::Fee] = "10";
-    tx[jss::TransactionType] = "Payment";
-    context.params[jss::tx_json] = tx;
-
-    JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
+    JLOG (j.warn()) << "Submit transaction to " << tx1[jss::Destination];
+    context.params[jss::tx_json] = tx1;
     RPC::transactionSubmitAttack (
-        context.params, failType, context.role,
+        tx1, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 1);
 
-    JLOG (j.warn()) << "Currently " << netOps.getLocalTxCount() << " transactions stored";
-    
-    // Change destination of tx -> this tx should be conflicting
-    tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
-    context.params[jss::tx_json] = tx;
-
-    JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
-    // Add tx to Transaction Queue (TxQ) and view ?
+    JLOG (j.warn()) << "Submit transaction to " << tx2[jss::Destination];
+    context.params[jss::tx_json] = tx2;
     RPC::transactionSubmitAttack (
-        context.params, failType, context.role,
+        tx2, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
@@ -221,36 +222,8 @@ Json::Value doAttack (RPC::Context& context)
     return Json::Value();
 }
 
-void sendTransaction(RPC::Context& context, beast::Journal j) {
-    // ripple::Application& app = context.app;
-    // Json::Value tx_json = context.params;
+void sendProposal(RPC::Context& context, beast::Journal j) {
 
-    // SigningForParams singForParams;
-    // transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-    //     jvRequest, role, signForParams, validatedLedgerAge, app);
-
-    // auto const toSkip = context.app.getHashRouter().shouldRelay(e.transaction->getID());
-
-    // protocol::TMTransaction tx;
-    // Serializer s;
-
-    // e.transaction->getSTransaction()->add(s);
-    // tx.set_rawtransaction(s.data(), s.size());
-    // tx.set_status(protocol::tsCURRENT);
-    // tx.set_receivetimestamp(
-    //     app_.timeKeeper().now().time_since_epoch().count());
-    // tx.set_deferred(e.result == terQUEUED);
-    // // FIXME: This should be when we received it
-    // app_.overlay().relay(e.transaction->getID(), tx, *toSkip);
-    // e.transaction->setBroadcast();
-
-    // protocol::TMTransaction& m;
-    // auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
-
-    // auto peers = context.app.overlay ().getActivePeers();
-
-    // for (auto const& p : peers)
-    //     p->send(sm);
 }
 
 void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluster_idx, beast::Journal j) {
