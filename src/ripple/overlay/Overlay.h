@@ -163,6 +163,19 @@ public:
     void
     relay (protocol::TMValidation& m,
         uint256 const& uid) = 0;
+    
+    /** Relay a transaction. If the tx reduce-relay feature is enabled then
+     * randomly select peers to relay to and queue transaction's hash
+     * for the rest of the peers.
+     * @param hash transaction's hash
+     * @param m transaction's protocol message to relay
+     * @param toSkip peers which have already seen this transaction
+     */
+    virtual void
+    relay(
+        uint256 const& hash,
+        protocol::TMTransaction& m,
+        std::set<Peer::id_t> const& toSkip) = 0;
 
     /** Visit every active peer and return a value
         The functor must:

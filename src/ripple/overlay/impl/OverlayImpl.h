@@ -210,6 +210,19 @@ public:
     void
     relay (protocol::TMValidation& m,
         uint256 const& uid) override;
+    
+    PeerSequence
+    getActivePeers(
+        std::set<Peer::id_t> const& toSkip,
+        std::size_t& active,
+        std::size_t& disabled,
+        std::size_t& enabledInSkip) const;
+
+    void
+    relay(
+        uint256 const&,
+        protocol::TMTransaction& m,
+        std::set<Peer::id_t> const& skip) override;
 
     //--------------------------------------------------------------------------
     //

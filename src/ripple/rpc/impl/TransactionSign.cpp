@@ -852,7 +852,6 @@ void transactionSubmitAttack (
     auto j = app.journal ("Attack");
     JLOG (j.warn()) << "transactionSubmitAttack: " << jvRequest;
 
-
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
     transactionPreProcessResult preprocResult = transactionPreProcessImpl (
