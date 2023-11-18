@@ -215,6 +215,8 @@ Json::Value doAttack (RPC::Context& context)
     // Change peers to match only network-cluster 2
     changePeers(context, peers, 2, j);
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
     JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
     // Add tx to Transaction Queue (TxQ) and view ?
     RPC::transactionSubmitAttack (
