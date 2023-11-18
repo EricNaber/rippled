@@ -177,7 +177,7 @@ Json::Value doSubmit (RPC::Context& context)
 Json::Value doAttack (RPC::Context& context)
 {
     auto j = context.app.journal ("Attack");
-    JLOG (j.warn()) << "Starting doAttack";
+    JLOG (j.warn()) << "Starting doAttack()";
     
     context.loadType = Resource::feeMediumBurdenRPC;
     const auto peers = context.app.overlay ().getActivePeers();             // store all peers (so we can connect again later)
@@ -197,9 +197,6 @@ Json::Value doAttack (RPC::Context& context)
     tx[jss::TransactionType] = "Payment";
     context.params[jss::tx_json] = tx;
 
-    // Change peers to match only network-cluster 1
-    // changePeers(context, peers, 1, j);
-
     JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
@@ -211,11 +208,6 @@ Json::Value doAttack (RPC::Context& context)
     // Change destination of tx -> this tx should be conflicting
     tx[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
     context.params[jss::tx_json] = tx;
-
-    // Change peers to match only network-cluster 2
-    // changePeers(context, peers, 2, j);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
     JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
     // Add tx to Transaction Queue (TxQ) and view ?

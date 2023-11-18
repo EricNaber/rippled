@@ -1213,14 +1213,14 @@ OverlayImpl::relay(
     for (auto const& p : peers) {
         auto peer_endpoint = p->getRemoteAddress();
         std::string addressString = peer_endpoint.address().to_string();
-        if (     cluster_idx == 1 && 
+        if (     cluster_idx == 1 &&    // Send to network cluster 1
             (   (strcmp(addressString.c_str(), "10.5.1.1") == 0) || 
                 (strcmp(addressString.c_str(), "10.5.1.2") == 0) || 
                 (strcmp(addressString.c_str(), "10.5.1.3") == 0) )) {
             JLOG(journal_.warn()) << "OverlayImpl::relay: send tx to " << addressString;
             p->send(sm);
         }
-        if (     cluster_idx == 2 && 
+        if (     cluster_idx == 2 &&    // Send to network cluster 2
             (   (strcmp(addressString.c_str(), "10.5.1.4") == 0) || 
                 (strcmp(addressString.c_str(), "10.5.1.5") == 0) || 
                 (strcmp(addressString.c_str(), "10.5.1.6") == 0) )) {
