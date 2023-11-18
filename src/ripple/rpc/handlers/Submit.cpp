@@ -206,14 +206,14 @@ Json::Value doAttack (RPC::Context& context)
     JLOG (j.warn()) << "Submit transaction to " << tx1[jss::Destination];
     context.params[jss::tx_json] = tx1;
     RPC::transactionSubmitAttack (
-        tx1, failType, context.role,
+        context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 1);
 
     JLOG (j.warn()) << "Submit transaction to " << tx2[jss::Destination];
     context.params[jss::tx_json] = tx2;
     RPC::transactionSubmitAttack (
-        tx2, failType, context.role,
+        context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
