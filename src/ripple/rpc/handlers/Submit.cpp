@@ -198,13 +198,13 @@ Json::Value doAttack (RPC::Context& context)
     context.params[jss::tx_json] = tx;
 
     // Change peers to match only network-cluster 1
-    changePeers(context, peers, 1, j);
+    // changePeers(context, peers, 1, j);
 
     JLOG (j.warn()) << "Submit transaction to " << tx[jss::Destination];
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
-        context.app, RPC::getProcessTxnFnAttack (context.netOps));
+        context.app, RPC::getProcessTxnFnAttack (context.netOps), 1);
 
     JLOG (j.warn()) << "Currently " << netOps.getLocalTxCount() << " transactions stored";
     
@@ -213,7 +213,7 @@ Json::Value doAttack (RPC::Context& context)
     context.params[jss::tx_json] = tx;
 
     // Change peers to match only network-cluster 2
-    changePeers(context, peers, 2, j);
+    // changePeers(context, peers, 2, j);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
@@ -222,12 +222,9 @@ Json::Value doAttack (RPC::Context& context)
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
-        context.app, RPC::getProcessTxnFnAttack (context.netOps));
-    
-    // Send all queued transactions
-    sendTransaction(context, j);     // TODO
+        context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    // Only connect to peers in cluster 1 (for debugging)
+    // disconnect from all peers
     changePeers(context, peers, -1, j);
     return Json::Value();
 }

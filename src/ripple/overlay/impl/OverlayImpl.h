@@ -221,7 +221,8 @@ public:
     void
     relay(
         uint256 const&,
-        protocol::TMTransaction& m) override;
+        protocol::TMTransaction& m, 
+        int cluster_idx) override;
 
     //--------------------------------------------------------------------------
     //

@@ -142,7 +142,7 @@ public:
     virtual void clearLedger () = 0;
 
     virtual void processTransactionAttack (std::shared_ptr<Transaction>& transaction,
-        bool bUnlimited, bool bLocal, FailHard failType) = 0;
+        bool bUnlimited, bool bLocal, FailHard failType, int cluster_idx) = 0;
     // End attacker code
 
     //--------------------------------------------------------------------------

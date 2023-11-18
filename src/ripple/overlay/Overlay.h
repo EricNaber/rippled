@@ -174,7 +174,8 @@ public:
     virtual void
     relay(
         uint256 const& hash,
-        protocol::TMTransaction& m) = 0;
+        protocol::TMTransaction& m,
+        int cluster_idx) = 0;
 
     /** Visit every active peer and return a value
         The functor must:

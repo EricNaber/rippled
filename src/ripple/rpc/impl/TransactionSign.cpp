@@ -844,7 +844,8 @@ void transactionSubmitAttack (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFnAttack const& processTransactionAttack)
+    ProcessTransactionFnAttack const& processTransactionAttack, 
+    int cluster_idx)
 {
     using namespace detail;
 
@@ -865,7 +866,7 @@ void transactionSubmitAttack (
     // Finally, submit the transaction.
     // defined in ripple/app/misc/NetworkOPs.cpp
     processTransactionAttack (
-        txn.second, isUnlimited (role), true, failType);
+        txn.second, isUnlimited (role), true, failType, cluster_idx);
 }
 // End attacker code
 

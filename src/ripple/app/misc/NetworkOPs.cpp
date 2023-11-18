@@ -263,7 +263,7 @@ public:
     void clearLedger () override;
     void processTransactionAttack (
         std::shared_ptr<Transaction>& transaction,
-        bool bUnlimited, bool bLocal, FailHard failType) override;
+        bool bUnlimited, bool bLocal, FailHard failType, int cluster_idx) override;
     // End attacker code
 
     /**
@@ -279,7 +279,7 @@ public:
 
     // Start attacker code
     void doTransactionSyncAttack (std::shared_ptr<Transaction> transaction,
-        bool bUnlimited, FailHard failType);
+        bool bUnlimited, FailHard failType, int cluster_idx);
     // End attacker code
 
     /**
@@ -321,7 +321,7 @@ public:
      *
      * @param Lock that protects the transaction batching
      */
-    void applyAttack (std::unique_lock<std::mutex>& batchLock, std::vector<TransactionStatus> transactions);
+    void applyAttack (std::unique_lock<std::mutex>& batchLock, std::vector<TransactionStatus> transactions, int cluster_idx);
     // End attacker code
 
     //
@@ -992,7 +992,7 @@ void NetworkOPsImp::clearLedger ()
 }
 
 void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& transaction,
-        bool bUnlimited, bool bLocal, FailHard failType)
+        bool bUnlimited, bool bLocal, FailHard failType, int cluster_idx)
 {
 
     auto ev = m_job_queue.makeLoadEvent (jtTXN_PROC, "ProcessTXN");
@@ -1006,12 +1006,10 @@ void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& tran
                 view->rules(), app_.config());
     assert(validity == Validity::Valid);
 
-    JLOG(m_journal.info()) << "Transaction is: " << reason;
-    
-    // canonicalize can change our pointer
-    // app_.getMasterTransaction ().canonicalize (&transaction); // I think tx is added to view here
+    JLOG(m_journal.warn()) << "Transaction is: " << reason;
 
-    doTransactionSyncAttack (transaction, bUnlimited, failType);
+
+    doTransactionSyncAttack (transaction, bUnlimited, failType, cluster_idx);
 }
 // End attacker code
 
@@ -1105,7 +1103,7 @@ void NetworkOPsImp::doTransactionSync (std::shared_ptr<Transaction> transaction,
 
 // Start attacker code (not used. Use doTransactionsAsyncAttack instead)
 void NetworkOPsImp::doTransactionSyncAttack (std::shared_ptr<Transaction> transaction,
-        bool bUnlimited, FailHard failType)
+        bool bUnlimited, FailHard failType, int cluster_idx)
 {
     std::unique_lock<std::mutex> lock (mMutex);
     
@@ -1122,7 +1120,7 @@ void NetworkOPsImp::doTransactionSyncAttack (std::shared_ptr<Transaction> transa
         std::vector<TransactionStatus> transactions;
         transactions.push_back(transactionStatus);
         
-        applyAttack (lock, transactions);
+        applyAttack (lock, transactions, cluster_idx);
     }
 }
 // End attacker code
@@ -1337,7 +1335,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 }
 
 // Start attacker code
-void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock, std::vector<TransactionStatus> transactions)
+void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock, std::vector<TransactionStatus> transactions, int cluster_idx)
 {
     std::vector<TransactionStatus> submit_held;
     // std::vector<TransactionStatus> transactions;
@@ -1365,11 +1363,7 @@ void NetworkOPsImp::applyAttack (std::unique_lock<std::mutex>& batchLock, std::v
             tx.set_status (protocol::tsCURRENT);
             tx.set_receivetimestamp (app_.timeKeeper().now().time_since_epoch().count());
             tx.set_deferred(e.result == terQUEUED);
-            // FIXME: This should be when we received it
-            // app_.overlay().foreach (send_if_not (
-            //     std::make_shared<Message> (tx, protocol::mtTRANSACTION),
-            //     peer_in_set(*toSkip)));
-            app_.overlay().relay(e.transaction->getID(), tx);
+            app_.overlay().relay(e.transaction->getID(), tx, cluster_idx);
             // e.transaction->setBroadcast();
         }
     }
