@@ -1116,7 +1116,7 @@ OverlayImpl::send (protocol::TMProposeSet& m)
     if (setup_.expire)
         m.set_hops(0);
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
-    JLOG(journal_.warn()) << "OverlayImpl::send: sending proposal: " << sm;
+
     for_each([&](std::shared_ptr<PeerImp>&& p)
     {
         p->send(sm);
@@ -1159,8 +1159,6 @@ OverlayImpl::relay (protocol::TMProposeSet& m, uint256 const& uid)
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
-        
-        JLOG(journal_.warn()) << "OverlayImpl::relay: sending proposal: " << sm;
         
         for_each([&](std::shared_ptr<PeerImp>&& p)
         {

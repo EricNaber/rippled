@@ -178,8 +178,8 @@ Json::Value doSubmit (RPC::Context& context)
 Json::Value doAttack (RPC::Context& context)
 {
     auto j = context.app.journal ("Attack");
-    performing_attack = true;
     JLOG (j.warn()) << "Starting doAttack(). Setting performing_attack = " << performing_attack;
+    performing_attack = true;
     
     // Store transaction-signing secret
     context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
@@ -205,6 +205,10 @@ Json::Value doAttack (RPC::Context& context)
     const auto ledger = context.app.getLedgerMaster().getCurrentLedger();   // store current ledger to restore it later
     auto const failType = getFailHard (context);
 
+    // Ensure the attack starts with the beginning of the open-phase
+    waitForPhase(context, 20, "establish");
+    waitForPhase(context, 20, "open");
+
     JLOG (j.warn()) << "Submit transaction to cluster 1: " << tx1;
     context.params[jss::tx_json] = tx1;
     RPC::transactionSubmitAttack (
@@ -219,16 +223,97 @@ Json::Value doAttack (RPC::Context& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    JLOG (j.warn()) << "Currently in phase: " << context.app.getOPs().getConsensusPhase();
     // Wait for phase establish to go on with second phase
-    while (strcmp(context.app.getOPs().getConsensusPhase().c_str(), "establish") != 0){
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-    JLOG (j.warn()) << "Now in establish-phase!";
+    waitForPhase(context, 20, "establish");
     return Json::Value();
 }
 
-void sendProposal(RPC::Context& context, beast::Journal j) {
+void waitForPhase(RPC::Context& context, int max_seconds_wait, std::string phase_name) {
+    auto j = context.app.journal ("Attack");
+    unsigned long foo = 0;
+    while (strcmp(context.app.getOPs().getConsensusPhase().c_str(), phase_name.c_str()) != 0){
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        foo++;
+        if (foo >= max_seconds_wait * 1000) {
+            JLOG (j.warn()) << "Not waiting any longer. Currently in phase: " << context.app.getOPs().getConsensusPhase();
+            return;
+        }
+    }
+    JLOG (j.warn()) << "waitForPhase: Now in: " << context.app.getOPs().getConsensusPhase();
+}
+
+void sendProposal(RPC::Context& context, Json::Value tx, beast::Journal j, int cluster_idx) {
+    // // Start Consensus<Adaptor>::closeLedger()
+    // // We should not be closing if we already have a position
+    // assert(!result_);
+
+    // phase_ = ConsensusPhase::establish;
+    // rawCloseTimes_.self = now_;
+
+    // result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+    // result_->roundTime.reset(clock_.now());
+    // // Share the newly created transaction set if we haven't already
+    // // received it from a peer
+    // if (acquired_.emplace(result_->txns.id(), result_->txns).second)
+    //     adaptor_.share(result_->txns);
+
+    // if (mode_.get() == ConsensusMode::proposing)
+    //     adaptor_.propose(result_->position);
+
+    // // Create disputes with any peer positions we have transactions for
+    // for (auto const& pit : currPeerPositions_)
+    // {
+    //     auto const& pos = pit.second.proposal().position();
+    //     auto const it = acquired_.find(pos);
+    //     if (it != acquired_.end())
+    //     {
+    //         createDisputes(it->second);
+    //     }
+    // }
+    
+    
+    // // Start RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
+    // JLOG(j_.trace()) << "We propose: "
+    //                  << (proposal.isBowOut()
+    //                          ? std::string("bowOut")
+    //                          : ripple::to_string(proposal.position()));
+
+    // protocol::TMProposeSet prop;
+
+    // prop.set_currenttxhash(
+    //     proposal.position().begin(), proposal.position().size());
+    // prop.set_previousledger(
+    //     proposal.prevLedger().begin(), proposal.position().size());
+    // prop.set_proposeseq(proposal.proposeSeq());
+    // prop.set_closetime(proposal.closeTime().time_since_epoch().count());
+
+    // prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
+
+    // auto signingHash = sha512Half(
+    //     HashPrefix::proposal,
+    //     std::uint32_t(proposal.proposeSeq()),
+    //     proposal.closeTime().time_since_epoch().count(),
+    //     proposal.prevLedger(),
+    //     proposal.position());
+
+    // auto sig = signDigest(valPublic_, valSecret_, signingHash);
+
+    // prop.set_signature(sig.data(), sig.size());
+
+    // auto const suppression = proposalUniqueId(
+    //     proposal.position(),
+    //     proposal.prevLedger(),
+    //     proposal.proposeSeq(),
+    //     proposal.closeTime(),
+    //     valPublic_,
+    //     sig);
+
+    // app_.getHashRouter ().addSuppression (suppression);
+    
+    // app_.overlay().send(prop);
+
+
+    // // Start OverlayImpl::send(protocol::TMProposeSet& m)
     // protocol::TMProposeSet& m;
     // if (setup_.expire)
     //     m.set_hops(0);
