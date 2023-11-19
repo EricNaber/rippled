@@ -1190,7 +1190,7 @@ OverlayImpl::relay (protocol::TMValidation& m, uint256 const& uid)
     }
 }
 
-// Start attacker code (stolen from rippled 2.0.4b)
+// Start attacker code (from rippled 2.0.4b)
 Overlay::PeerSequence
 OverlayImpl::getActivePeers(
     std::set<Peer::id_t> const& toSkip,

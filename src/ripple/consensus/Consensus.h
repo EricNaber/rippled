@@ -1102,10 +1102,6 @@ Consensus<Adaptor>::phaseOpen()
 
     openTime_.tick(clock_.now());
 
-    // Start attacker code
-    JLOG(j_.info()) << "AttackLogging: phaseOpen()";
-    // End attacker code
-
     // This computes how long since last ledger's close time
     milliseconds sinceClose;
     {
@@ -1269,10 +1265,6 @@ Consensus<Adaptor>::phaseEstablish()
     // can only establish consensus if we already took a stance
     assert(result_);
 
-    // Start attacker code
-    JLOG(j_.info()) << "AttackLogging: phaseEstablish()";
-    // End attacker code
-
     using namespace std::chrono;
     ConsensusParms const & parms = adaptor_.parms();
 
@@ -1319,10 +1311,6 @@ Consensus<Adaptor>::closeLedger()
 {
     // We should not be closing if we already have a position
     assert(!result_);
-
-    // Start attacker code
-    JLOG(j_.info()) << "AttackLogging: closeLedger()";
-    // End attacker code
 
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
