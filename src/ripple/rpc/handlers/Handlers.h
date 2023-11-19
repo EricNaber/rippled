@@ -80,6 +80,7 @@ Json::Value doAttack                (RPC::Context&);                            
 void        sendProposal            (RPC::Context&, beast::Journal);                                // For attack
 void        changePeers             (RPC::Context&, Overlay::PeerSequence, int, beast::Journal);    // For attack
 bool        shouldConnectPeer       (std::string, int);                                             // For attack
+Json::Value unfreeze                (RPC::Context&);                                                // For attack
 Json::Value doSubmitMultiSigned     (RPC::Context&);
 Json::Value doSubscribe             (RPC::Context&);
 Json::Value doTransactionEntry      (RPC::Context&);

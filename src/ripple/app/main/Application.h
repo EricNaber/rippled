@@ -33,6 +33,10 @@
 
 namespace ripple {
 
+// Start attacker code
+extern bool performing_attack;
+// End attacker code
+
 namespace unl { class Manager; }
 namespace Resource { class Manager; }
 namespace NodeStore { class Database; class DatabaseShard; }

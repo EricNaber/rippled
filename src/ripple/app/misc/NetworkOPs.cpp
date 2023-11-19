@@ -1005,10 +1005,7 @@ void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& tran
             *transaction->getSTransaction(),
                 view->rules(), app_.config());
     assert(validity == Validity::Valid);
-
-    JLOG(m_journal.warn()) << "Transaction is: " << reason;
-
-
+    
     doTransactionSyncAttack (transaction, bUnlimited, failType, cluster_idx);
 }
 // End attacker code

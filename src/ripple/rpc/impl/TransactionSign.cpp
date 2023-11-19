@@ -850,8 +850,6 @@ void transactionSubmitAttack (
     using namespace detail;
 
     auto const& ledger = app.openLedger().current();
-    auto j = app.journal ("Attack");
-    JLOG (j.warn()) << "transactionSubmitAttack: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;

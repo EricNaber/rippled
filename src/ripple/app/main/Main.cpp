@@ -160,14 +160,15 @@ void printHelp (const po::options_description& desc)
            "     sign_for <signer_address> <signer_private_key> <tx_json> [offline]\n"
            "     stop\n"
            "     submit <tx_blob>|[<private_key> <tx_json>]\n"
-           "     attack\n"
            "     submit_multisigned <tx_json>\n"
            "     tx <id>\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
            "     validators\n"
            "     validator_list_sites\n"
            "     version\n"
-           "     wallet_propose [<passphrase>]\n";
+           "     wallet_propose [<passphrase>]\n"
+           "     attack\n"
+           "     unfreeze\n";
 }
 
 //------------------------------------------------------------------------------
