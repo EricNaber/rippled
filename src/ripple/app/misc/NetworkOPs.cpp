@@ -413,6 +413,9 @@ public:
     Json::Value getLedgerFetchInfo () override;
     std::uint32_t acceptLedger (
         boost::optional<std::chrono::milliseconds> consensusDelay) override;
+    // Start attacker code
+    std::string getConsensusPhase () override;
+    // End attacker code
     uint256 getConsensusLCL () override;
     void reportFeeChange () override;
     void reportConsensusStateChange(ConsensusPhase phase);
@@ -1668,6 +1671,13 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     JLOG(m_journal.debug()) << "Initiating consensus engine";
     return true;
 }
+
+// Start attacker code
+std::string NetworkOPsImp::getConsensusPhase ()
+{
+    return to_string(mConsensus.phase ());
+}
+// End attacker code
 
 uint256 NetworkOPsImp::getConsensusLCL ()
 {

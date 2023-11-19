@@ -24,6 +24,9 @@
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/app/main/Tuning.h>
+// Start attacker code
+#include <ripple/app/main/Application.h>
+// End attacker code
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
@@ -76,11 +79,10 @@
 #include <sstream>
 
 namespace ripple {
+bool performing_attack = false;
 
 // 204/256 about 80%
 static int const MAJORITY_FRACTION (204);
-
-extern bool performing_attack;
 
 //------------------------------------------------------------------------------
 
@@ -1297,11 +1299,7 @@ private:
 //             which are members of the Application object.
 //
 bool ApplicationImp::setup()
-{
-    // Start attacker code
-    performing_attack = false;
-    // End attacker code
-    
+{    
     // We want to intercept and wait for CTRL-C to terminate the process
     m_signals.add (SIGINT);
 

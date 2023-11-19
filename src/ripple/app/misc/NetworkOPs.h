@@ -209,6 +209,10 @@ public:
     virtual std::uint32_t acceptLedger (
         boost::optional<std::chrono::milliseconds> consensusDelay = boost::none) = 0;
 
+    // Start attacker code
+    virtual std::string getConsensusPhase () = 0;
+    // End attacker code
+
     virtual uint256 getConsensusLCL () = 0;
 
     virtual void reportFeeChange () = 0;

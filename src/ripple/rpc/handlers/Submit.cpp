@@ -219,8 +219,12 @@ Json::Value doAttack (RPC::Context& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    // disconnect from all peers
-    // changePeers(context, peers, -1, j);
+    JLOG (j.warn()) << "Currently in phase: " << context.app.getOPs().getConsensusPhase();
+    // Wait for phase establish to go on with second phase
+    while (strcmp(context.app.getOPs().getConsensusPhase().c_str(), "establish") != 0){
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    JLOG (j.warn()) << "Now in establish-phase!";
     return Json::Value();
 }
 
