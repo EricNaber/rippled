@@ -638,6 +638,14 @@ struct Peer
         share(pos);
     }
 
+    // Start attacker code
+    void
+    proposeAttack(Proposal const& pos)
+    {
+        share(pos);
+    }
+    // End attacker code
+
     ConsensusParms const&
     parms() const
     {
