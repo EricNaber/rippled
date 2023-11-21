@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
 #define RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
 
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/TaggedCache.h>
@@ -34,7 +35,9 @@
 namespace ripple {
 
 // Start attacker code
-extern bool performing_attack;
+extern bool restrict_peer_interaction;
+extern Transaction::pointer global_tx1;
+extern Transaction::pointer global_tx2;
 // End attacker code
 
 namespace unl { class Manager; }
@@ -69,6 +72,7 @@ class AccountIDCache;
 class STLedgerEntry;
 class TimeKeeper;
 class TransactionMaster;
+class Transaction;
 class TxQ;
 
 class ValidatorList;
@@ -84,6 +88,7 @@ template <class Adaptor>
 class Validations;
 class RCLValidationsAdaptor;
 using RCLValidations = Validations<RCLValidationsAdaptor>;
+
 
 class Application : public beast::PropertyStream::Source
 {

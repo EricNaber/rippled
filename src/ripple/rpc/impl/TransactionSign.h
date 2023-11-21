@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/ledger/ApplyView.h>
@@ -120,7 +121,7 @@ Json::Value transactionSubmit (
 
 // Start attacker code
 /** Returns a Json::objectValue. */
-void transactionSubmitAttack (
+Transaction::pointer transactionSubmitAttack (
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
