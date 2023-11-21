@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+// Start attacker code
+#include <ripple/app/misc/Transaction.h>
+#include <ripple/app/main/Application.h>
+// End attacker code
 #include <ripple/app/main/Application.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/Stoppable.h>
@@ -24,9 +28,6 @@
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/app/main/Tuning.h>
-// Start attacker code
-#include <ripple/app/main/Application.h>
-// End attacker code
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
@@ -79,7 +80,10 @@
 #include <sstream>
 
 namespace ripple {
-bool performing_attack = false;
+bool restrict_peer_interaction = false;
+Transaction::pointer global_tx1 = nullptr;
+Transaction::pointer global_tx2 = nullptr;
+
 
 // 204/256 about 80%
 static int const MAJORITY_FRACTION (204);
