@@ -528,35 +528,4 @@ isPseudoTx(STObject const& tx)
     return tt == ttAMENDMENT || tt == ttFEE;
 }
 
-// Start attacker code
-// Transaction::Result MyHardcodedPayment::apply()
-// {
-//     // Validate and process the hardcoded transaction data from tx_json
-// 
-//     // Check if the sender's account exists and has sufficient XRP for the payment
-// 
-//     // Check the destination account, and ensure it exists
-// 
-//     // Check the sender's sequence number and increment it
-// 
-//     // Calculate the transaction fee
-// 
-//     // Create a Payment transaction object with the hardcoded data
-//     Transaction tx;
-//     tx.from = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-//     tx.to = "rfhWbXmBpxqjUWfqVv34t4pHJHs6YDFKCN";
-//     tx.amount = "1000000000";
-//     tx.fee = "10";
-//     tx.sequence = 20;
-//     tx.signingPubKey = "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020";
-//     tx.signature = "304502210081086E242686D8CD8A4E0B0204737ECA484BACCA5912EBD6B571695DF5DA31D1022029A2F24D93A97E4C719B3BF51B45817D14D138458EC9CFD81FEFED5A1CADF6AD";
-// 
-//     // Process the payment transaction and update ledger state
-//     Transaction::Result result = processPaymentTransaction(tx);
-// 
-//     return result;
-// }
-
-// End attacker code
-
 } // ripple
