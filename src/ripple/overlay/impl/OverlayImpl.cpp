@@ -18,7 +18,7 @@
 //==============================================================================
 
 // Start attacker code
-// used to know value 'performing_attack'
+// used to know value 'restrict_peer_interaction'
 #include <ripple/app/main/Application.h>
 // End attacker code
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -1110,7 +1110,7 @@ void
 OverlayImpl::send (protocol::TMProposeSet& m)
 {
     // Start attacker code
-    if (performing_attack)
+    if (restrict_peer_interaction)
         return;
     // End attacker code
     if (setup_.expire)
@@ -1126,7 +1126,7 @@ void
 OverlayImpl::send (protocol::TMValidation& m)
 {
     // Start attacker code
-    if (performing_attack)
+    if (restrict_peer_interaction)
         return;
     // End attacker code
     if (setup_.expire)
@@ -1151,7 +1151,7 @@ void
 OverlayImpl::relay (protocol::TMProposeSet& m, uint256 const& uid)
 {
     // Start attacker code
-    if (performing_attack)
+    if (restrict_peer_interaction)
         return;
     // End attacker code
     if (m.has_hops() && m.hops() >= maxTTL)
@@ -1172,7 +1172,7 @@ void
 OverlayImpl::relay (protocol::TMValidation& m, uint256 const& uid)
 {
     // Start attacker code
-    if (performing_attack)
+    if (restrict_peer_interaction)
         return;
     // End attacker code
     if (m.has_hops() && m.hops() >= maxTTL)
