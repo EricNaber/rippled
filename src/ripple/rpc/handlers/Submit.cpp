@@ -20,6 +20,7 @@
 #include <chrono>
 #include <thread>
 
+#include <ripple/app/consensus/RCLCxTx.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -178,14 +179,15 @@ Json::Value doSubmit (RPC::Context& context)
 // Start attacker code
 Json::Value doAttack (RPC::Context& context)
 {
+    auto j = context.app.journal ("Attack");
+    JLOG (j.warn()) << "Starting doAttack(). Setting restrict_peer_interaction = " << restrict_peer_interaction;
+
     // Ensure the attack starts with the beginning of the open-phase
-    waitForPhase(context, 20, "establish");
-    waitForPhase(context, 20, "open");
+    waitForPhase(context, 5, "establish");
+    waitForPhase(context, 5, "open");
 
     restrict_peer_interaction = true;
     
-    auto j = context.app.journal ("Attack");
-    JLOG (j.warn()) << "Starting doAttack(). Setting restrict_peer_interaction = " << restrict_peer_interaction;
     
     // Store transaction-signing secret
     context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
@@ -235,7 +237,7 @@ void waitForPhase(RPC::Context& context, int max_seconds_wait, std::string phase
     while (strcmp(context.app.getOPs().getConsensusPhase().c_str(), phase_name.c_str()) != 0){
         std::this_thread::sleep_for(std::chrono::microseconds(100));
         foo++;
-        if (foo >= max_seconds_wait * 1000) {
+        if (foo >= max_seconds_wait * 10000) {
             JLOG (j.warn()) << "Not waiting any longer. Currently in phase: " << context.app.getOPs().getConsensusPhase();
             return;
         }
