@@ -1319,15 +1319,16 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedger()
 {
-    phase_ = ConsensusPhase::establish;
-    rawCloseTimes_.self = now_;
-
     // Start attacker code
     if (restrict_peer_interaction) {
         closeLedgerAttack();
         return;
     }
     // End attacker code
+    
+    phase_ = ConsensusPhase::establish;
+    rawCloseTimes_.self = now_;
+
 
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
