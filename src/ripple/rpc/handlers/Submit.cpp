@@ -179,16 +179,14 @@ Json::Value doSubmit (RPC::Context& context)
 // Start attacker code
 Json::Value doAttack (RPC::Context& context)
 {
+    restrict_peer_interaction = true;
     auto j = context.app.journal ("Attack");
     JLOG (j.warn()) << "Starting doAttack(). Setting restrict_peer_interaction = " << restrict_peer_interaction;
 
     // Ensure the attack starts with the beginning of the open-phase
     waitForPhase(context, 5, "establish");
     waitForPhase(context, 5, "open");
-
-    restrict_peer_interaction = true;
-    
-    
+        
     // Store transaction-signing secret
     context.params[jss::secret] = "sEd7gsxCwikqZ9C81bjKMFNM9xoReYU";
 
