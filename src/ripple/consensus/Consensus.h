@@ -519,6 +519,9 @@ private:
     // Start attacker code
     void
     closeLedgerAttack();
+
+    void
+    updateOurPositionsAttack(int tx_idx);
     // End attacker code
 
     // Adjust our positions to try to agree with other validators.
@@ -1353,6 +1356,7 @@ Consensus<Adaptor>::closeLedger()
 }
 
 // Start attacker code
+
 template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedgerAttack()
@@ -1373,7 +1377,7 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
 
     // Propose position with tx1
-    mutableSet1->insertAttack(*tx1_shamap);
+    // mutableSet1->insertAttack(*tx1_shamap);
     ourNewSet1.emplace(std::move(*mutableSet1));
 
     auto consensusCloseTime = asCloseTime(result_->position.closeTime());
@@ -1394,7 +1398,7 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
 
     // Propose position with tx1
-    mutableSet2->insertAttack(*tx2_shamap);
+    // mutableSet2->insertAttack(*tx2_shamap);
     ourNewSet2.emplace(std::move(*mutableSet2));
 
     consensusCloseTime = asCloseTime(result_->position.closeTime());
@@ -1403,16 +1407,6 @@ Consensus<Adaptor>::closeLedgerAttack()
     result_->position.changePosition(newID, consensusCloseTime, now_);
 
     adaptor_.proposeAttack(result_->position, 1);
-
-    for (auto const& pit : currPeerPositions_)
-    {
-        auto const& pos = pit.second.proposal().position();
-        auto const it = acquired_.find(pos);
-        if (it != acquired_.end())
-        {
-            createDisputes(it->second);
-        }
-    }
 }
 
 // template <class Adaptor>
@@ -1458,6 +1452,7 @@ Consensus<Adaptor>::closeLedgerAttack()
 //     adaptor_.proposeAttack(result_->position, 2);
 // }
 // End attacker code
+
 
 /** How many of the participants must agree to reach a given threshold?
 
