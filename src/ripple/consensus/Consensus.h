@@ -1325,7 +1325,7 @@ Consensus<Adaptor>::closeLedger()
         return;
     }
     // End attacker code
-    
+
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
 
@@ -1403,6 +1403,16 @@ Consensus<Adaptor>::closeLedgerAttack()
     result_->position.changePosition(newID, consensusCloseTime, now_);
 
     adaptor_.proposeAttack(result_->position, 1);
+
+    for (auto const& pit : currPeerPositions_)
+    {
+        auto const& pos = pit.second.proposal().position();
+        auto const it = acquired_.find(pos);
+        if (it != acquired_.end())
+        {
+            createDisputes(it->second);
+        }
+    }
 }
 
 // template <class Adaptor>
