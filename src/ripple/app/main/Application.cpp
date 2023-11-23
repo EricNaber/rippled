@@ -80,10 +80,11 @@
 #include <sstream>
 
 namespace ripple {
+// Start attacker code
 bool restrict_peer_interaction = false;
 Transaction::pointer global_tx1 = nullptr;
 Transaction::pointer global_tx2 = nullptr;
-
+// End attacker code
 
 // 204/256 about 80%
 static int const MAJORITY_FRACTION (204);
