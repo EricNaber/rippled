@@ -638,6 +638,12 @@ struct Peer
         share(pos);
     }
 
+    void
+    proposeAttack(Proposal const& pos, int cluster_idx)
+    {
+        share(pos);
+    }
+
     // Start attacker code
     void
     proposeAttack(Proposal const& pos)

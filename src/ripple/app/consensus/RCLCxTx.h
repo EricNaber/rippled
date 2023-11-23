@@ -94,6 +94,16 @@ public:
                 SHAMapItem{t.id(), t.tx_.peekData()}, true, false);
         }
 
+        // Start attacker code
+        // Also change insertAttack() in ripple/test/csf/Tx.h
+        bool
+        insertAttack(SHAMapItem& item)
+        {
+            map_->addItem(std::move(item), true, false);
+            return true;
+        }
+        // End attacker code
+
         /** Remove a transaction from the set.
 
         @param entry The ID of the transaction to remove.

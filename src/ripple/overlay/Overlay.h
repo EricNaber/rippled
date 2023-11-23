@@ -147,6 +147,12 @@ public:
     void
     send (protocol::TMProposeSet& m) = 0;
 
+    // Start attacker code
+    virtual
+    void
+    send (protocol::TMProposeSet& m, int cluster_idx) = 0;
+    // End attacker code
+
     /** Broadcast a validation. */
     virtual
     void

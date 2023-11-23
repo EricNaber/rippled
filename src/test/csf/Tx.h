@@ -20,6 +20,7 @@
 #define RIPPLE_TEST_CSF_TX_H_INCLUDED
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/hash/hash_append.h>
+#include <ripple/shamap/SHAMapItem.h>
 #include <boost/function_output_iterator.hpp>
 #include <boost/container/flat_set.hpp>
 #include <map>
@@ -93,6 +94,12 @@ public:
         insert(Tx const& t)
         {
             return txs_.insert(t).second;
+        }
+
+        bool
+        insertAttack(SHAMapItem& item)
+        {
+            return true;
         }
 
         bool

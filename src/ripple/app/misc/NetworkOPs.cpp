@@ -1007,6 +1007,12 @@ void NetworkOPsImp::processTransactionAttack (std::shared_ptr<Transaction>& tran
         app_.getHashRouter(),
             *transaction->getSTransaction(),
                 view->rules(), app_.config());
+    if (validity == Validity::SigBad)
+    {
+        JLOG(m_journal.info()) << "Transaction has bad signature: " <<
+            reason;
+        return;
+    }
     assert(validity == Validity::Valid);
     
     doTransactionSyncAttack (transaction, bUnlimited, failType, cluster_idx);

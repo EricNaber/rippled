@@ -251,6 +251,11 @@ class RCLConsensus
         void
         propose(RCLCxPeerPos::Proposal const& proposal);
 
+        // Start attacker code
+        void
+        proposeAttack(RCLCxPeerPos::Proposal const& proposal, int cluster_idx);
+        // End attacker code
+        
         /** Share the given tx set to peers.
 
             @param txns The TxSet to share.

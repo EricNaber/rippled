@@ -200,6 +200,11 @@ public:
     void
     send (protocol::TMProposeSet& m) override;
 
+    // Start attacker code
+    void 
+    send (protocol::TMProposeSet& m, int cluster_idx) override;
+    // End attacker code
+
     void
     send (protocol::TMValidation& m) override;
 
