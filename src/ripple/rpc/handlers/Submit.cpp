@@ -226,6 +226,24 @@ Json::Value doAttack (RPC::Context& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
+    waitForPhase(context, 5, "establish");
+    
+    // Start with phase 2
+    // context.app.
+    // Create ConsensusProposal
+
+    // ConsensusProposal(
+    //     LedgerID_t const& prevLedger,
+    //     std::uint32_t seq,
+    //     Position_t const& position,
+    //     NetClock::time_point closeTime,
+    //     NetClock::time_point now,
+    //     NodeID_t const& nodeID)
+
+
+    // RCLCxPeerPos::Proposal const& proposal;
+    // RCLConsensus::Adaptor::proposeAttack(proposal, 1);
+
     return Json::Value();
 }
 

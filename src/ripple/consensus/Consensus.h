@@ -516,14 +516,6 @@ private:
     void
     closeLedger();
 
-    // Start attacker code
-    void
-    closeLedgerAttack();
-
-    void
-    updateOurPositionsAttack(int tx_idx);
-    // End attacker code
-
     // Adjust our positions to try to agree with other validators.
     void
     updateOurPositions();
@@ -1322,13 +1314,6 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedger()
 {
-    // Start attacker code
-    if (restrict_peer_interaction) {
-        closeLedgerAttack();
-        return;
-    }
-    // End attacker code
-
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
 
@@ -1354,104 +1339,6 @@ Consensus<Adaptor>::closeLedger()
         }
     }
 }
-
-// Start attacker code
-
-template <class Adaptor>
-void
-Consensus<Adaptor>::closeLedgerAttack()
-{
-    if (!global_tx1 || !global_tx2)
-        return;
-
-    result_->roundTime.reset(clock_.now());
-    
-    // Propose tx1
-    boost::optional<TxSet_t> ourNewSet1;
-    boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
-
-    // Convert global_tx1 to shamap-item
-    Serializer s1;
-    global_tx1->getSTransaction()->add(s1);
-    uint256 tx1_hash = global_tx1->getID();
-    auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-
-    // Propose position with tx1
-    // mutableSet1->insertAttack(*tx1_shamap);
-    ourNewSet1.emplace(std::move(*mutableSet1));
-
-    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
-    auto newID = ourNewSet1->id();
-    result_->txns = std::move(*ourNewSet1);
-    result_->position.changePosition(newID, consensusCloseTime, now_);
-
-    adaptor_.proposeAttack(result_->position, 1);
-
-    // Propose tx2
-    boost::optional<TxSet_t> ourNewSet2;
-    boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
-
-    // Convert global_tx1 to shamap-item
-    Serializer s2;
-    global_tx2->getSTransaction()->add(s2);
-    uint256 tx2_hash = global_tx2->getID();
-    auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
-
-    // Propose position with tx1
-    // mutableSet2->insertAttack(*tx2_shamap);
-    ourNewSet2.emplace(std::move(*mutableSet2));
-
-    consensusCloseTime = asCloseTime(result_->position.closeTime());
-    newID = ourNewSet1->id();
-    result_->txns = std::move(*ourNewSet2);
-    result_->position.changePosition(newID, consensusCloseTime, now_);
-
-    adaptor_.proposeAttack(result_->position, 1);
-}
-
-// template <class Adaptor>
-// void
-// Consensus<Adaptor>::closeLedgerAttack()
-// {
-//     if (!global_tx1 || !global_tx2)
-//         return;
-
-//     result_->roundTime.reset(clock_.now());
-//     boost::optional<TxSet_t> ourNewSet;
-//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
-//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
-
-//     // Convert global_tx1 to shamap-item
-//     Serializer s1;
-//     global_tx1->getSTransaction()->add(s1);
-//     uint256 tx1_hash = global_tx1->getID();
-//     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-
-//     // Convert global_tx2 to shamap-item
-//     Serializer s2;
-//     global_tx2->getSTransaction()->add(s2);
-//     uint256 tx2_hash = global_tx2->getID();
-//     auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
-    
-//     // Reset result
-//     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-//     mutableSet1.emplace(result_->txns);
-
-//     // Propose position with tx1
-//     mutableSet1->insertAttack(*tx1_shamap);
-//     ourNewSet.emplace(std::move(*mutableSet1));
-//     adaptor_.proposeAttack(result_->position, 1);
-
-//     // Reset result
-//     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-//     mutableSet2.emplace(result_->txns);
-    
-//     // Propose position with tx2
-//     mutableSet2->insertAttack(*tx2_shamap);
-//     ourNewSet.emplace(std::move(*mutableSet2));
-//     adaptor_.proposeAttack(result_->position, 2);
-// }
-// End attacker code
 
 
 /** How many of the participants must agree to reach a given threshold?
@@ -1821,6 +1708,106 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
         return effCloseTime(raw, closeResolution_, previousLedger_.closeTime());
 }
 
-}  // namespace ripple
+}  
+
+// Start attacker code
+
+// template <class Adaptor>
+// void
+// Consensus<Adaptor>::closeLedgerAttack()
+// {
+//     if (!global_tx1 || !global_tx2)
+//         return;
+
+//     result_->roundTime.reset(clock_.now());
+    
+//     // Propose tx1
+//     boost::optional<TxSet_t> ourNewSet1;
+//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+
+//     // Convert global_tx1 to shamap-item
+//     Serializer s1;
+//     global_tx1->getSTransaction()->add(s1);
+//     uint256 tx1_hash = global_tx1->getID();
+//     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+
+//     // Propose position with tx1
+//     // mutableSet1->insertAttack(*tx1_shamap);
+//     ourNewSet1.emplace(std::move(*mutableSet1));
+
+//     auto consensusCloseTime = asCloseTime(result_->position.closeTime());
+//     auto newID = ourNewSet1->id();
+//     result_->txns = std::move(*ourNewSet1);
+//     result_->position.changePosition(newID, consensusCloseTime, now_);
+
+//     adaptor_.proposeAttack(result_->position, 1);
+
+//     // Propose tx2
+//     boost::optional<TxSet_t> ourNewSet2;
+//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
+
+//     // Convert global_tx1 to shamap-item
+//     Serializer s2;
+//     global_tx2->getSTransaction()->add(s2);
+//     uint256 tx2_hash = global_tx2->getID();
+//     auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+
+//     // Propose position with tx1
+//     // mutableSet2->insertAttack(*tx2_shamap);
+//     ourNewSet2.emplace(std::move(*mutableSet2));
+
+//     consensusCloseTime = asCloseTime(result_->position.closeTime());
+//     newID = ourNewSet1->id();
+//     result_->txns = std::move(*ourNewSet2);
+//     result_->position.changePosition(newID, consensusCloseTime, now_);
+
+//     adaptor_.proposeAttack(result_->position, 1);
+// }
+
+// template <class Adaptor>
+// void
+// Consensus<Adaptor>::closeLedgerAttack()
+// {
+//     if (!global_tx1 || !global_tx2)
+//         return;
+
+//     result_->roundTime.reset(clock_.now());
+//     boost::optional<TxSet_t> ourNewSet;
+//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
+
+//     // Convert global_tx1 to shamap-item
+//     Serializer s1;
+//     global_tx1->getSTransaction()->add(s1);
+//     uint256 tx1_hash = global_tx1->getID();
+//     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+
+//     // Convert global_tx2 to shamap-item
+//     Serializer s2;
+//     global_tx2->getSTransaction()->add(s2);
+//     uint256 tx2_hash = global_tx2->getID();
+//     auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+    
+//     // Reset result
+//     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+//     mutableSet1.emplace(result_->txns);
+
+//     // Propose position with tx1
+//     mutableSet1->insertAttack(*tx1_shamap);
+//     ourNewSet.emplace(std::move(*mutableSet1));
+//     adaptor_.proposeAttack(result_->position, 1);
+
+//     // Reset result
+//     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+//     mutableSet2.emplace(result_->txns);
+    
+//     // Propose position with tx2
+//     mutableSet2->insertAttack(*tx2_shamap);
+//     ourNewSet.emplace(std::move(*mutableSet2));
+//     adaptor_.proposeAttack(result_->position, 2);
+// }
+// End attacker code
+
+// namespace ripple
 
 #endif
