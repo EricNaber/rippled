@@ -30,6 +30,8 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/consensus/ConsensusProposal.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/ledger/RawView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -209,6 +211,7 @@ Json::Value doAttack (RPC::Context& context)
     context.loadType = Resource::feeMediumBurdenRPC;
     const auto peers = context.app.overlay ().getActivePeers();             // store all peers (so we can connect again later)
     const auto ledger = context.app.getLedgerMaster().getCurrentLedger();   // store current ledger to restore it later
+    const auto prevLedger = context.ledgerMaster.getClosedLedger();
     auto const failType = getFailHard (context);
 
 
@@ -226,19 +229,18 @@ Json::Value doAttack (RPC::Context& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    waitForPhase(context, 5, "establish");
     
     // Start with phase 2
-    // context.app.
+    // waitForPhase(context, 5, "establish");
     // Create ConsensusProposal
+    // std::uint32_t seq = prevLedger->info().seq + 1;
+    // std::uint32_t seq = 0;
+    // NetClock::time_point closeTime = NetClock::time_point{};
+    // NetClock::time_point now = NetClock::time_point{};
+    // auto nodeID = context.app.nodeIdentity();
+    // Position_t position;
 
-    // ConsensusProposal(
-    //     LedgerID_t const& prevLedger,
-    //     std::uint32_t seq,
-    //     Position_t const& position,
-    //     NetClock::time_point closeTime,
-    //     NetClock::time_point now,
-    //     NodeID_t const& nodeID)
+    // ConsensusProposal proposal1(prevLedger, seq, position, closeTime, now, nodeID);
 
 
     // RCLCxPeerPos::Proposal const& proposal;

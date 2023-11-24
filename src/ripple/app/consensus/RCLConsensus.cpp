@@ -174,6 +174,9 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
+    if (restrict_peer_interaction)
+        proposeAttack(proposal);
+
     JLOG(j_.trace()) << "We propose: "
                      << (proposal.isBowOut()
                              ? std::string("bowOut")
@@ -216,7 +219,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
 // Start attacker code
 void
-RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int cluster_idx)
+RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal)
 {
     /**
      * Build proposal and send it only to nodes in network-cluster with index cluster_idx
@@ -272,7 +275,7 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
 
     JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 7";
 
-    app_.overlay().send(prop, cluster_idx);
+    app_.overlay().send(prop, 1);
 }
 // End attacker code
 
