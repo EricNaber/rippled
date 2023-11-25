@@ -231,10 +231,6 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal)
 
     JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 1";
 
-    // Add global_tx1 to proposal.position()
-    // proposal.position()
-    JLOG(j_.warn()) << "RCL proposeAttack: position-type is " << typeid(proposal.position()).name();
-
     protocol::TMProposeSet prop;
 
     prop.set_currenttxhash(

