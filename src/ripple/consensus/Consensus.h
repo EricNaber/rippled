@@ -1380,17 +1380,12 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedgerAttack()
 {
-    restrict_peer_interaction = false;
-    phase_ = ConsensusPhase::establish;
-    rawCloseTimes_.self = now_;
+    if (!global_tx1 || !global_tx2)
+        return;
 
-    result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
-    // Share the newly created transaction set if we haven't already
-    // received it from a peer
-    if (acquired_.emplace(result_->txns.id(), result_->txns).second)
-        adaptor_.share(result_->txns);
-
+    
+    // Propose tx1
     boost::optional<TxSet_t> ourNewSet1;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
 
@@ -1398,31 +1393,41 @@ Consensus<Adaptor>::closeLedgerAttack()
     Serializer s1;
     global_tx1->getSTransaction()->add(s1);
     uint256 tx1_hash = global_tx1->getID();
-    auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-    RCLCxTx tx1_rclc = RCLCxTx(*tx1_shamap);
-
-    JLOG(j_.warn()) << "closeLedgerAttack: " << tx1_rclc.id();
+    auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+    RCLCxTx tx1_rclc = RCLCxTx(*tx1_shamap_item);
 
     // Propose position with tx1
-    // mutableSet1->insert(tx1_rclc);
+    // mutableSet1->insertAttack(*tx1_shamap_item);
+    // mutableSet1->insert(*tx1_rclc);
+    ourNewSet1.emplace(std::move(*mutableSet1));
 
-    // boost::optional<TxSet_t> tx_set;
+    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
+    auto newID = ourNewSet1->id();
+    result_->txns = std::move(*ourNewSet1);
+    result_->position.changePosition(newID, consensusCloseTime, now_);
 
-    // if (mode_.get() == ConsensusMode::proposing)
-    //     adaptor_.propose(result_->position);
+    adaptor_.proposeAttack(result_->position, 1);
 
-    // Create disputes with any peer positions we have transactions for
-    for (auto const& pit : currPeerPositions_)
-    {
-        auto const& pos = pit.second.proposal().position();
-        auto const it = acquired_.find(pos);
-        if (it != acquired_.end())
-        {
-            createDisputesAttack(it->second);
-        }
-    }
+    // Propose tx2
+    boost::optional<TxSet_t> ourNewSet2;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
 
-    updateOurPositionsAttack();
+    // Convert global_tx2 to shamap-item
+    Serializer s2;
+    global_tx2->getSTransaction()->add(s2);
+    uint256 tx2_hash = global_tx2->getID();
+    auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+
+    // Propose position with tx1
+    // mutableSet2->insertAttack(*tx2_shamap);
+    ourNewSet2.emplace(std::move(*mutableSet2));
+
+    consensusCloseTime = asCloseTime(result_->position.closeTime());
+    newID = ourNewSet1->id();
+    result_->txns = std::move(*ourNewSet2);
+    result_->position.changePosition(newID, consensusCloseTime, now_);
+
+    adaptor_.proposeAttack(result_->position, 1);
 }
 
 template <class Adaptor>
@@ -2117,7 +2122,65 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 //     ourNewSet.emplace(std::move(*mutableSet2));
 //     adaptor_.proposeAttack(result_->position, 2);
 // }
-// End attacker code
+
+
+// template <class Adaptor>
+// void
+// Consensus<Adaptor>::closeLedgerAttack()
+// {
+//     restrict_peer_interaction = false;
+//     phase_ = ConsensusPhase::establish;
+//     rawCloseTimes_.self = now_;
+
+//     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+//     result_->roundTime.reset(clock_.now());
+//     // Share the newly created transaction set if we haven't already
+//     // received it from a peer
+//     if (acquired_.emplace(result_->txns.id(), result_->txns).second)
+//         adaptor_.share(result_->txns);
+
+//     boost::optional<TxSet_t> ourNewSet1;
+//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+
+//     // Convert global_tx1 to shamap-item
+//     Serializer s1;
+//     global_tx1->getSTransaction()->add(s1);
+//     uint256 tx1_hash = global_tx1->getID();
+//     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+//     RCLCxTx tx1_rclc = RCLCxTx(*tx1_shamap);
+
+//     JLOG(j_.warn()) << "closeLedgerAttack: " << tx1_rclc.id();
+
+//     // Propose position with tx1
+//     // mutableSet1->insert(tx1_rclc);
+
+//     // boost::optional<TxSet_t> tx_set;
+
+//     // if (mode_.get() == ConsensusMode::proposing)
+//     //     adaptor_.propose(result_->position);
+
+//     // Create disputes with any peer positions we have transactions for
+//     for (auto const& pit : currPeerPositions_)
+//     {
+//         auto const& pos = pit.second.proposal().position();
+//         auto const it = acquired_.find(pos);
+//         if (it != acquired_.end())
+//         {
+//             createDisputesAttack(it->second);
+//         }
+//     }
+
+
+//     // dont send init proposal
+//     //   -> wait 5ms (heartbeat-timer tiggers once every second anyway, right?)
+//     // updateOurPosition so that tx1 is included
+//     // send a proposal with seq = 0
+//     // updateOurPosition so that tx2 is included
+//     // send a proposal with seq = 0
+
+//     // updateOurPositionsAttack();
+// }
+// end attacker code
 
 // namespace ripple
 
