@@ -82,6 +82,7 @@
 namespace ripple {
 // Start attacker code
 bool restrict_peer_interaction = false;
+bool finished_attack = false;
 Transaction::pointer global_tx1 = nullptr;
 Transaction::pointer global_tx2 = nullptr;
 // End attacker code
