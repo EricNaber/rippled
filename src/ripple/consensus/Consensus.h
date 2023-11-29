@@ -1385,15 +1385,20 @@ Consensus<Adaptor>::closeLedgerAttack()
 
     JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
-    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
     
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
 
+    // phase_ = ConsensusPhase::establish;
+    // rawCloseTimes_.self = now_;
+
+    // result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+    // result_->roundTime.reset(clock_.now());
+
     JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
-    
+
     // Convert global_tx1 to rclc-transaction
     Serializer s1;
     global_tx1->getSTransaction()->add(s1);
@@ -1430,6 +1435,7 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto newID2 = ourNewSet2->id();
 
     JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
+    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
 
     // Submit proposal with tx1
     result_->txns = std::move(*ourNewSet1);
