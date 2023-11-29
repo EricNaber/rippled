@@ -224,26 +224,20 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
     JLOG(j_.warn()) << "We propose: "
                      << (proposal.isBowOut()
                              ? std::string("bowOut")
-                             : ripple::to_string(proposal.position())) << " to cluster " << cluster_idx;
+                             : ripple::to_string(proposal.position())) << " to cluster " << cluster_idx
+                             << " with sequence_number: " << proposal.proposeSeq();
 
-    JLOG(j_.warn()) << "Checkpoint 1";
     protocol::TMProposeSet prop;
 
     prop.set_currenttxhash(
         proposal.position().begin(), proposal.position().size());
-    JLOG(j_.warn()) << "Checkpoint 2";
     prop.set_previousledger(
         proposal.prevLedger().begin(), proposal.position().size());
-    JLOG(j_.warn()) << "Checkpoint 3";
-    // prop.set_proposeseq(proposal.proposeSeq());
-    prop.set_proposeseq(0);
-    JLOG(j_.warn()) << "Checkpoint 4";
+    prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
-    JLOG(j_.warn()) << "Checkpoint 5";
 
     prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
 
-    JLOG(j_.warn()) << "Checkpoint 6";
     auto signingHash = sha512Half(
         HashPrefix::proposal,
         std::uint32_t(proposal.proposeSeq()),
@@ -251,13 +245,10 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
         proposal.prevLedger(),
         proposal.position());
 
-    JLOG(j_.warn()) << "Checkpoint 7";
     auto sig = signDigest(valPublic_, valSecret_, signingHash);
 
-    JLOG(j_.warn()) << "Checkpoint 8";
     prop.set_signature(sig.data(), sig.size());
 
-    JLOG(j_.warn()) << "Checkpoint 9";
     auto const suppression = proposalUniqueId(
         proposal.position(),
         proposal.prevLedger(),
@@ -266,10 +257,8 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
         valPublic_,
         sig);
 
-    JLOG(j_.warn()) << "Checkpoint 10";
     app_.getHashRouter ().addSuppression (suppression);
 
-    JLOG(j_.warn()) << "Checkpoint 11";
     app_.overlay().send(prop, cluster_idx);
 }
 // End attacker code

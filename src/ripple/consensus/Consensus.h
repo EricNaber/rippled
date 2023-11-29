@@ -1329,6 +1329,7 @@ Consensus<Adaptor>::closeLedger()
         closeLedgerAttack();
         return;
     }
+    JLOG(j_.warn()) << "closeLedger: checkpoint";
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
 
@@ -1379,24 +1380,16 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedgerAttack()
 {
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 1";
     if (!global_tx1 || !global_tx2)
         return;
 
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 2";
+    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
     
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
 
-    // Propose tx1
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 3";
-    boost::optional<TxSet_t> ourNewSet1;
-    boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
-    mutableSet1.emplace(result_->txns);
-
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 4";
     // Convert global_tx1 to rclc-transaction
     Serializer s1;
     global_tx1->getSTransaction()->add(s1);
@@ -1404,30 +1397,6 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
     RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
 
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 5";
-    // Propose position with tx1
-    mutableSet1->insert(tx1_rclc);
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 6";
-    ourNewSet1.emplace(std::move(*mutableSet1));
-
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 7";
-    auto consensusCloseTime1 = asCloseTime(result_->position.closeTime());
-    auto newID1 = ourNewSet1->id();
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 8";
-    result_->txns = std::move(*ourNewSet1);
-    result_->position.changePosition(newID1, consensusCloseTime1, now_);
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 9";
-
-
-    adaptor_.proposeAttack(result_->position, 1);
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 10";
-
-    // Propose tx2
-    boost::optional<TxSet_t> ourNewSet2;
-    boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
-    mutableSet2.emplace(result_->txns);
-
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 11";
     // Convert global_tx2 to rclc-transaction
     Serializer s2;
     global_tx2->getSTransaction()->add(s2);
@@ -1435,20 +1404,33 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
     RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
 
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 12";
-    // Propose position with tx2
+    // Init new tx-sets with tx1 or tx2
+    boost::optional<TxSet_t> ourNewSet1;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+    mutableSet1.emplace(result_->txns);
+    mutableSet1->insert(tx1_rclc);
+    ourNewSet1.emplace(std::move(*mutableSet1));
+    auto newID1 = ourNewSet1->id();
+
+    boost::optional<TxSet_t> ourNewSet2;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
+    mutableSet2.emplace(result_->txns);
     mutableSet2->insert(tx2_rclc);
     ourNewSet2.emplace(std::move(*mutableSet2));
-
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 13";
-    auto consensusCloseTime2 = asCloseTime(result_->position.closeTime());
     auto newID2 = ourNewSet2->id();
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 14";
-    result_->txns = std::move(*ourNewSet2);
-    result_->position.changePosition(newID2, consensusCloseTime2, now_);
 
-    JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 15";
+    // Submit proposal with tx1
+    result_->txns = std::move(*ourNewSet1);
+    result_->position.changePosition(newID1, consensusCloseTime, now_);
+    adaptor_.proposeAttack(result_->position, 1);
+
+    // Submit proposal with tx2
+    result_->txns = std::move(*ourNewSet2);
+    result_->position.changePosition(newID2, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 2);
+
+    JLOG(j_.warn()) << "Finished attack. Exit...";
+    exit(0);
 }
 
 template <class Adaptor>
