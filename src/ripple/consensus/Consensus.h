@@ -1332,7 +1332,6 @@ Consensus<Adaptor>::closeLedger()
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
 
-
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
     // Share the newly created transaction set if we haven't already
@@ -1385,8 +1384,11 @@ Consensus<Adaptor>::closeLedgerAttack()
         return;
 
     JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 2";
-    result_->roundTime.reset(clock_.now());
+    phase_ = ConsensusPhase::establish;
+    rawCloseTimes_.self = now_;
 
+    result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+    result_->roundTime.reset(clock_.now());
 
     // Propose tx1
     JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 3";
