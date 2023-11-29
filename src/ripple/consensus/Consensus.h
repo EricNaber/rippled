@@ -1386,7 +1386,7 @@ Consensus<Adaptor>::closeLedgerAttack()
     JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 2";
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
-
+    
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
 
@@ -1394,6 +1394,7 @@ Consensus<Adaptor>::closeLedgerAttack()
     JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 3";
     boost::optional<TxSet_t> ourNewSet1;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+    mutableSet1.emplace(result_->txns);
 
     JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 4";
     // Convert global_tx1 to rclc-transaction
@@ -1424,6 +1425,7 @@ Consensus<Adaptor>::closeLedgerAttack()
     // Propose tx2
     boost::optional<TxSet_t> ourNewSet2;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
+    mutableSet2.emplace(result_->txns);
 
     JLOG(j_.warn()) << "closeLedgerAttack: Checkpoint 11";
     // Convert global_tx2 to rclc-transaction
