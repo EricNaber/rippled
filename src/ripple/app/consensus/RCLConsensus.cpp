@@ -224,9 +224,7 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
     JLOG(j_.warn()) << "We propose: "
                      << (proposal.isBowOut()
                              ? std::string("bowOut")
-                             : ripple::to_string(proposal.position()));
-
-    JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 1";
+                             : ripple::to_string(proposal.position())) << " to cluster " << cluster_idx;
 
     protocol::TMProposeSet prop;
 
@@ -239,7 +237,6 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
 
     prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
 
-    JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 2";
 
     auto signingHash = sha512Half(
         HashPrefix::proposal,
@@ -247,16 +244,11 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
         proposal.closeTime().time_since_epoch().count(),
         proposal.prevLedger(),
         proposal.position());
-    
-    JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 3";
+
 
     auto sig = signDigest(valPublic_, valSecret_, signingHash);
 
-    JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 4";
-
     prop.set_signature(sig.data(), sig.size());
-
-    JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 5";
 
     auto const suppression = proposalUniqueId(
         proposal.position(),
@@ -266,11 +258,7 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
         valPublic_,
         sig);
 
-    JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 6";
-
     app_.getHashRouter ().addSuppression (suppression);
-
-    JLOG(j_.warn()) << "RCL proposeAttack: checkpoint 7";
 
     app_.overlay().send(prop, cluster_idx);
 }

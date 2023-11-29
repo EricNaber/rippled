@@ -73,6 +73,7 @@ class TxSet
 public:
     using ID = beast::uhash<>::result_type;
     using Tx = csf::Tx;
+    using Tx = csf::Tx;
 
     static ID calcID(TxSetType const & txs)
     {
@@ -97,9 +98,9 @@ public:
         }
 
         bool
-        insertAttack(SHAMapItem& item)
+        insertAttack(Tx const& t)
         {
-            return true;
+            return txs_.insert(t).second;
         }
 
         bool

@@ -97,10 +97,10 @@ public:
         // Start attacker code
         // Also change insertAttack() in ripple/test/csf/Tx.h
         bool
-        insertAttack(SHAMapItem& item)
+        insertAttack(Tx const& t)
         {
-            map_->addItem(std::move(item), true, false);
-            return true;
+            return map_->addItem(
+                SHAMapItem{t.id(), t.tx_.peekData()}, true, false);
         }
         // End attacker code
 

@@ -1384,27 +1384,26 @@ Consensus<Adaptor>::closeLedgerAttack()
         return;
 
     result_->roundTime.reset(clock_.now());
-    
+
     // Propose tx1
     boost::optional<TxSet_t> ourNewSet1;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
 
-    // Convert global_tx1 to shamap-item
+    // Convert global_tx1 to rclc-transaction
     Serializer s1;
     global_tx1->getSTransaction()->add(s1);
     uint256 tx1_hash = global_tx1->getID();
     auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-    RCLCxTx tx1_rclc = RCLCxTx(*tx1_shamap_item);
+    RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
 
     // Propose position with tx1
-    // mutableSet1->insertAttack(*tx1_shamap_item);
-    // mutableSet1->insert(*tx1_rclc);
+    mutableSet1->insert(tx1_rclc);
     ourNewSet1.emplace(std::move(*mutableSet1));
 
-    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
-    auto newID = ourNewSet1->id();
+    auto consensusCloseTime1 = asCloseTime(result_->position.closeTime());
+    auto newID1 = ourNewSet1->id();
     result_->txns = std::move(*ourNewSet1);
-    result_->position.changePosition(newID, consensusCloseTime, now_);
+    result_->position.changePosition(newID1, consensusCloseTime1, now_);
 
     adaptor_.proposeAttack(result_->position, 1);
 
@@ -1412,22 +1411,23 @@ Consensus<Adaptor>::closeLedgerAttack()
     boost::optional<TxSet_t> ourNewSet2;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
 
-    // Convert global_tx2 to shamap-item
+    // Convert global_tx2 to rclc-transaction
     Serializer s2;
     global_tx2->getSTransaction()->add(s2);
     uint256 tx2_hash = global_tx2->getID();
-    auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+    auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+    RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
 
-    // Propose position with tx1
-    // mutableSet2->insertAttack(*tx2_shamap);
+    // Propose position with tx2
+    mutableSet2->insert(tx2_rclc);
     ourNewSet2.emplace(std::move(*mutableSet2));
 
-    consensusCloseTime = asCloseTime(result_->position.closeTime());
-    newID = ourNewSet1->id();
+    auto consensusCloseTime2 = asCloseTime(result_->position.closeTime());
+    auto newID2 = ourNewSet2->id();
     result_->txns = std::move(*ourNewSet2);
-    result_->position.changePosition(newID, consensusCloseTime, now_);
+    result_->position.changePosition(newID2, consensusCloseTime2, now_);
 
-    adaptor_.proposeAttack(result_->position, 1);
+    adaptor_.proposeAttack(result_->position, 2);
 }
 
 template <class Adaptor>
