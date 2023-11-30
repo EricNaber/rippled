@@ -174,10 +174,11 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
-    JLOG(j_.trace()) << "We propose: "
+    JLOG(j_.warn()) << "We propose: "
                      << (proposal.isBowOut()
                              ? std::string("bowOut")
-                             : ripple::to_string(proposal.position()));
+                             : ripple::to_string(proposal.position()))
+                             << " with sequence_number: " << proposal.proposeSeq();
 
     protocol::TMProposeSet prop;
 
@@ -233,14 +234,16 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
         proposal.position().begin(), proposal.position().size());
     prop.set_previousledger(
         proposal.prevLedger().begin(), proposal.position().size());
-    prop.set_proposeseq(proposal.proposeSeq());
+    prop.set_proposeseq(1);
+    // prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
 
     prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
 
     auto signingHash = sha512Half(
         HashPrefix::proposal,
-        std::uint32_t(proposal.proposeSeq()),
+        // std::uint32_t(proposal.proposeSeq()),
+        std::uint32_t(1),
         proposal.closeTime().time_since_epoch().count(),
         proposal.prevLedger(),
         proposal.position());
@@ -252,7 +255,8 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
     auto const suppression = proposalUniqueId(
         proposal.position(),
         proposal.prevLedger(),
-        proposal.proposeSeq(),
+        // proposal.proposeSeq(),
+        1,
         proposal.closeTime(),
         valPublic_,
         sig);

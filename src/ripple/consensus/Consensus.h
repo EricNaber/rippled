@@ -1383,21 +1383,12 @@ Consensus<Adaptor>::closeLedgerAttack()
     if (!global_tx1 || !global_tx2)
         return;
 
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
     
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
-
-    // phase_ = ConsensusPhase::establish;
-    // rawCloseTimes_.self = now_;
-
-    // result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-    // result_->roundTime.reset(clock_.now());
-
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
     // Convert global_tx1 to rclc-transaction
     Serializer s1;
@@ -1406,7 +1397,6 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
     RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
 
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
     // Convert global_tx2 to rclc-transaction
     Serializer s2;
@@ -1415,7 +1405,6 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
     RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
 
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
     // Init new tx-sets with tx1 or tx2
     boost::optional<TxSet_t> ourNewSet1;
@@ -1425,7 +1414,6 @@ Consensus<Adaptor>::closeLedgerAttack()
     ourNewSet1.emplace(std::move(*mutableSet1));
     auto newID1 = ourNewSet1->id();
 
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
     boost::optional<TxSet_t> ourNewSet2;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
@@ -1434,7 +1422,6 @@ Consensus<Adaptor>::closeLedgerAttack()
     ourNewSet2.emplace(std::move(*mutableSet2));
     auto newID2 = ourNewSet2->id();
 
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
     auto consensusCloseTime = asCloseTime(result_->position.closeTime());
 
     // Submit proposal with tx1
@@ -1442,14 +1429,12 @@ Consensus<Adaptor>::closeLedgerAttack()
     result_->position.changePosition(newID1, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 1);
     
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
     // Submit proposal with tx2
     result_->txns = std::move(*ourNewSet2);
     result_->position.changePosition(newID2, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 2);
 
-    JLOG(j_.warn()) << "closeLedgerAttack: checkpoint";
 
     JLOG(j_.warn()) << "Finished attack. Exit...";
     exit(0);
