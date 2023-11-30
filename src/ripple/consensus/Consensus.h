@@ -1424,12 +1424,13 @@ Consensus<Adaptor>::closeLedgerAttack()
 
     auto consensusCloseTime = asCloseTime(result_->position.closeTime());
 
+    JLOG(j_.warn()) << "tx1-ID: " << tx1_rclc.id();
     // Submit proposal with tx1
     result_->txns = std::move(*ourNewSet1);
     result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 1);
     
-
+    JLOG(j_.warn()) << "tx1-ID: " << tx2_rclc.id();
     // Submit proposal with tx2
     result_->txns = std::move(*ourNewSet2);
     result_->position.changePositionAttack(newID2, consensusCloseTime, now_);

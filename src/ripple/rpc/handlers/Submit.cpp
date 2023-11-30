@@ -214,6 +214,7 @@ Json::Value doAttack (RPC::Context& context)
     const auto prevLedger = context.ledgerMaster.getClosedLedger();
     auto const failType = getFailHard (context);
 
+    changePeers(context, peers, 1, j);
 
     JLOG (j.warn()) << "Submit transaction to cluster 1: " << tx1;
     context.params[jss::tx_json] = tx1;
@@ -347,14 +348,16 @@ void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluste
             auto peer_endpoint = peer->getRemoteAddress();
             std::string addressString = peer_endpoint.address().to_string();
 
-            if (shouldConnectPeer(addressString, cluster_idx)) {
-                JLOG (j.warn()) << "changePeers: connect    to   " << addressString;
-                context.app.overlay ().connect(peer_endpoint);
-            } else {
-                JLOG (j.warn()) << "changePeers: disconnect from " << addressString;
-                auto peerImp = std::dynamic_pointer_cast<PeerImp>(peer);
-                peerImp->close();
-            }
+            JLOG (j.warn()) << addressString << " has id: " << peer->id();
+
+            // if (shouldConnectPeer(addressString, cluster_idx)) {
+            //     JLOG (j.warn()) << "changePeers: connect    to   " << addressString;
+            //     context.app.overlay ().connect(peer_endpoint);
+            // } else {
+            //     JLOG (j.warn()) << "changePeers: disconnect from " << addressString;
+            //     auto peerImp = std::dynamic_pointer_cast<PeerImp>(peer);
+            //     peerImp->close();
+            // }
         }
     }
 }
