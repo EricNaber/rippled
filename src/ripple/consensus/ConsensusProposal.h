@@ -176,6 +176,7 @@ public:
             ++proposeSeq_;
     }
 
+    // Start attacker code
     void
     changePositionAttack(
         Position_t const& newPosition,
@@ -187,6 +188,7 @@ public:
         time_ = now;
         proposeSeq_ = 0;
     }
+    // End attacker code
 
     /** Leave consensus
 

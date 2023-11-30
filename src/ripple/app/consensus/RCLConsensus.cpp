@@ -128,6 +128,8 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 void
 RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
 {
+    if (restrict_peer_interaction)
+        return;
     protocol::TMProposeSet prop;
 
     auto const& proposal = peerPos.proposal();
@@ -152,7 +154,8 @@ RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
 void
 RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 {
-
+    if (restrict_peer_interaction)
+        return;
     // If we didn't relay this transaction recently, relay it to all peers
     if (app_.getHashRouter().shouldRelay(tx.id()))
     {
@@ -174,6 +177,9 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
+    if (restrict_peer_interaction)
+        return;
+    
     JLOG(j_.warn()) << "We propose: "
                      << (proposal.isBowOut()
                              ? std::string("bowOut")
@@ -267,7 +273,8 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
 void
 RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
-
+    if (restrict_peer_interaction)
+        return;
     inboundTransactions_.giveSet(txns.id(), txns.map_, false);
 }
 

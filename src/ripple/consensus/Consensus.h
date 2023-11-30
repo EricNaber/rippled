@@ -1430,7 +1430,7 @@ Consensus<Adaptor>::closeLedgerAttack()
     result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 1);
     
-    JLOG(j_.warn()) << "tx1-ID: " << tx2_rclc.id();
+    JLOG(j_.warn()) << "tx2-ID: " << tx2_rclc.id();
     // Submit proposal with tx2
     result_->txns = std::move(*ourNewSet2);
     result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
