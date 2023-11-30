@@ -183,10 +183,16 @@ public:
         NetClock::time_point newCloseTime,
         NetClock::time_point now)
     {
+        // dont increase proposeSeq_
         position_ = newPosition;
         closeTime_ = newCloseTime;
         time_ = now;
-        proposeSeq_ = 0;
+    }
+
+    void
+    increaseSequence()
+    {
+        ++proposeSeq_;
     }
     // End attacker code
 

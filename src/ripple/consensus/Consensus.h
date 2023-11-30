@@ -1436,9 +1436,9 @@ Consensus<Adaptor>::closeLedgerAttack()
     result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 2);
 
+    result_->position.increaseSequence();
 
-    JLOG(j_.warn()) << "Finished attack. Exit...";
-    exit(0);
+    JLOG(j_.warn()) << "Finished attack.";
 }
 
 template <class Adaptor>
