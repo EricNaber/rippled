@@ -1426,13 +1426,13 @@ Consensus<Adaptor>::closeLedgerAttack()
 
     // Submit proposal with tx1
     result_->txns = std::move(*ourNewSet1);
-    result_->position.changePosition(newID1, consensusCloseTime, now_);
+    result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 1);
     
 
     // Submit proposal with tx2
     result_->txns = std::move(*ourNewSet2);
-    result_->position.changePosition(newID2, consensusCloseTime, now_);
+    result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 2);
 
 

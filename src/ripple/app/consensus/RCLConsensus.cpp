@@ -234,16 +234,14 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
         proposal.position().begin(), proposal.position().size());
     prop.set_previousledger(
         proposal.prevLedger().begin(), proposal.position().size());
-    prop.set_proposeseq(1);
-    // prop.set_proposeseq(proposal.proposeSeq());
+    prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
 
     prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
 
     auto signingHash = sha512Half(
         HashPrefix::proposal,
-        // std::uint32_t(proposal.proposeSeq()),
-        std::uint32_t(1),
+        std::uint32_t(proposal.proposeSeq()),
         proposal.closeTime().time_since_epoch().count(),
         proposal.prevLedger(),
         proposal.position());
@@ -255,8 +253,7 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
     auto const suppression = proposalUniqueId(
         proposal.position(),
         proposal.prevLedger(),
-        // proposal.proposeSeq(),
-        1,
+        proposal.proposeSeq(),
         proposal.closeTime(),
         valPublic_,
         sig);

@@ -19,7 +19,9 @@
 
 #ifndef RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
-
+// Start attacker code
+#include <ripple/app/main/Application.h>
+// End attacker code
 #include <ripple/basics/safe_cast.h>
 #include <ripple/server/impl/BasePeer.h>
 #include <ripple/server/impl/LowestLayer.h>
@@ -218,6 +220,10 @@ void
 BaseWSPeer<Handler, Impl>::
 send(std::shared_ptr<WSMsg> w)
 {
+    // Start attacker code
+    if (restrict_peer_interaction)
+        return;
+    // End attacker code
     if(! strand_.running_in_this_thread())
         return post(
             strand_,

@@ -176,6 +176,18 @@ public:
             ++proposeSeq_;
     }
 
+    void
+    changePositionAttack(
+        Position_t const& newPosition,
+        NetClock::time_point newCloseTime,
+        NetClock::time_point now)
+    {
+        position_ = newPosition;
+        closeTime_ = newCloseTime;
+        time_ = now;
+        proposeSeq_ = 0;
+    }
+
     /** Leave consensus
 
         Update position to indicate the node left consensus.
