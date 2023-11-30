@@ -1707,7 +1707,7 @@ Consensus<Adaptor>::updateOurPositions()
         while (it != currPeerPositions_.end())
         {
             Proposal_t const& peerProp = it->second.proposal();
-            if (peerProp.isStale(peerCutoff))
+            if (peerProp.isStale(peerCutoff) && !restrict_peer_interaction) // Start attacker code (&& restrict_peer_interaction)
             {
                 // peer's proposal is stale, so remove it
                 NodeID_t const& peerID = peerProp.nodeID();
