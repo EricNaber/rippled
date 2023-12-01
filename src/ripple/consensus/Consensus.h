@@ -1024,7 +1024,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(typename Ledger_t::ID const& lgrId)
 {
-    assert(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
+    // assert(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
 
     // Stop proposing because we are out of sync
     leaveConsensus();
@@ -1326,7 +1326,7 @@ void
 Consensus<Adaptor>::closeLedger()
 {
     if (restrict_peer_interaction){
-        closeLedgerAttack();
+        submitConflictingProposals();
     }
     else {
         JLOG(j_.warn()) << "Start closeLedger";
@@ -1340,8 +1340,9 @@ Consensus<Adaptor>::closeLedger()
         if (acquired_.emplace(result_->txns.id(), result_->txns).second)
             adaptor_.share(result_->txns);
 
-        if (mode_.get() == ConsensusMode::proposing)
+        if (mode_.get() == ConsensusMode::proposing) {
             adaptor_.propose(result_->position);
+        }
     }
 
     // Create disputes with any peer positions we have transactions for
@@ -1371,9 +1372,6 @@ this.
 inline int
 participantsNeeded(int participants, int percent)
 {
-    if (restrict_peer_interaction)
-        JLOG(j_.warn()) << "participantsNeeded";
-
     int result = ((participants * percent) + (percent / 2)) / 100;
 
     return (result == 0) ? 1 : result;
@@ -1626,7 +1624,7 @@ Consensus<Adaptor>::updateOurPositionsAttack()
 
         // Share our new position if we are still participating this round
         if (!result_->position.isBowOut() && (mode_.get() == ConsensusMode::proposing)) {
-            if (restrict_peer_interaction) {
+            if (!restrict_peer_interaction) {
                 adaptor_.propose(result_->position);
             } else {
                 submitConflictingProposals();
@@ -1956,7 +1954,7 @@ Consensus<Adaptor>::leaveConsensus()
         if (result_ && !result_->position.isBowOut())
         {
             result_->position.bowOut(now_);
-            if (restrict_peer_interaction)
+            if (!restrict_peer_interaction)
                 adaptor_.propose(result_->position);
             else
                 submitConflictingProposals();
