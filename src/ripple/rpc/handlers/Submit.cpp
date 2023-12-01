@@ -181,9 +181,8 @@ Json::Value doSubmit (RPC::Context& context)
 // Start attacker code
 Json::Value doAttack (RPC::Context& context)
 {
-    performing_attack = true;
     auto j = context.app.journal ("Attack");
-    JLOG (j.warn()) << "Starting doAttack(). Setting performing_attack = " << performing_attack;
+    JLOG (j.warn()) << "Starting doAttack()";
 
     // Ensure the attack starts with the beginning of the open-phase
     waitForPhase(context, 5, "establish");
@@ -230,12 +229,12 @@ Json::Value doAttack (RPC::Context& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    JLOG (j.warn()) << "Attack finished. Keeping performing_attack = true.";
+    JLOG (j.warn()) << "Phase 1 finished. Set performing_attack = true.";
+
     while (true) {
         performing_attack = true;
         std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
-    JLOG (j.warn()) << "Leaving doAttack-function. -> Left while-true loop...";
 
     return Json::Value();
 }
