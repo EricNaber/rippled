@@ -230,22 +230,12 @@ Json::Value doAttack (RPC::Context& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    
-    // Start with phase 2
-    // waitForPhase(context, 5, "establish");
-    // Create ConsensusProposal
-    // std::uint32_t seq = prevLedger->info().seq + 1;
-    // std::uint32_t seq = 0;
-    // NetClock::time_point closeTime = NetClock::time_point{};
-    // NetClock::time_point now = NetClock::time_point{};
-    // auto nodeID = context.app.nodeIdentity();
-    // Position_t position;
-
-    // ConsensusProposal proposal1(prevLedger, seq, position, closeTime, now, nodeID);
-
-
-    // RCLCxPeerPos::Proposal const& proposal;
-    // RCLConsensus::Adaptor::proposeAttack(proposal, 1);
+    JLOG (j.warn()) << "Attack finished. Keeping restrict_peer_interaction = true.";
+    while (true) {
+        restrict_peer_interaction = true;
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+    }
+    JLOG (j.warn()) << "Leaving doAttack-function. -> Left while-true loop...";
 
     return Json::Value();
 }
@@ -254,7 +244,7 @@ void waitForPhase(RPC::Context& context, int max_seconds_wait, std::string phase
     auto j = context.app.journal ("Attack");
     unsigned long foo = 0;
     while (strcmp(context.app.getOPs().getConsensusPhase().c_str(), phase_name.c_str()) != 0){
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
         foo++;
         if (foo >= max_seconds_wait * 10000) {
             JLOG (j.warn()) << "Not waiting any longer. Currently in phase: " << context.app.getOPs().getConsensusPhase();
