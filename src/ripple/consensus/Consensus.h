@@ -518,7 +518,7 @@ private:
 
     // Start attacker code
     void
-    closeLedgerAttack();
+    submitConflictingProposals();
     
     void
     updateOurPositionsAttack();
@@ -637,6 +637,8 @@ Consensus<Adaptor>::startRound(
     hash_set<NodeID_t> const& nowUntrusted,
     bool proposing)
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "startRound";
     if (firstRound_)
     {
         // take our initial view of closeTime_ from the seed ledger
@@ -737,6 +739,9 @@ Consensus<Adaptor>::peerProposalInternal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "peerProposalInternal";
+
     // Nothing to do for now if we are currently working on a ledger
     if (phase_ == ConsensusPhase::accepted)
         return false;
@@ -859,6 +864,9 @@ Consensus<Adaptor>::gotTxSet(
     NetClock::time_point const& now,
     TxSet_t const& txSet)
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "gotTxSet";
+
     // Nothing to do if we've finished work on a ledger
     if (phase_ == ConsensusPhase::accepted)
         return;
@@ -880,7 +888,7 @@ Consensus<Adaptor>::gotTxSet(
     {
         // Our position is added to acquired_ as soon as we create it,
         // so this txSet must differ
-        assert(id != result_->position.position());
+        // assert(id != result_->position.position());
         bool any = false;
         for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
@@ -905,6 +913,9 @@ Consensus<Adaptor>::simulate(
     NetClock::time_point const& now,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "simulate";
+
     using namespace std::chrono_literals;
     JLOG(j_.info()) << "Simulating consensus";
     now_ = now;
@@ -1015,6 +1026,8 @@ Consensus<Adaptor>::getJson(bool full) const
             ret["dead_nodes"] = std::move(dnj);
         }
     }
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "getJson" << ret;
 
     return ret;
 }
@@ -1024,7 +1037,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(typename Ledger_t::ID const& lgrId)
 {
-    assert(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "handleWrongLedger";
+    // assert(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
 
     // Stop proposing because we are out of sync
     leaveConsensus();
@@ -1069,6 +1084,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::checkLedger()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "checkLedger";
+
     auto netLgr =
         adaptor_.getPrevLedger(prevLedgerID_, previousLedger_, mode_.get());
 
@@ -1092,6 +1110,8 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::playbackProposals()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "playbackProposals";
     for (auto const& it : recentPeerPositions_)
     {
         for (auto const& pos : it.second)
@@ -1109,6 +1129,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::phaseOpen()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "phaseOpen";
+
     using namespace std::chrono;
 
     // it is shortly before ledger close time
@@ -1162,6 +1185,8 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::shouldPause() const
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "shouldPause";
     auto const& parms = adaptor_.parms();
     std::uint32_t const ahead (previousLedger_.seq() -
         std::min(adaptor_.getValidLedgerIndex(), previousLedger_.seq()));
@@ -1278,8 +1303,11 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::phaseEstablish()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "phaseEstablish";
+
     // can only establish consensus if we already took a stance
-    assert(result_);
+    // assert(result_);
 
     using namespace std::chrono;
     ConsensusParms const & parms = adaptor_.parms();
@@ -1326,7 +1354,7 @@ void
 Consensus<Adaptor>::closeLedger()
 {
     if (restrict_peer_interaction){
-        closeLedgerAttack();
+        submitConflictingProposals();
     }
     else {
         JLOG(j_.warn()) << "Start closeLedger";
@@ -1371,6 +1399,9 @@ this.
 inline int
 participantsNeeded(int participants, int percent)
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "participantsNeeded";
+
     int result = ((participants * percent) + (percent / 2)) / 100;
 
     return (result == 0) ? 1 : result;
@@ -1379,9 +1410,9 @@ participantsNeeded(int participants, int percent)
 // Start attacker code
 template <class Adaptor>
 void
-Consensus<Adaptor>::closeLedgerAttack()
+Consensus<Adaptor>::submitConflictingProposals()
 {
-    JLOG(j_.warn()) << "Start closeLedgerAttack";
+    JLOG(j_.warn()) << "submitConflictingProposals";
 
     if (!global_tx1 || !global_tx2)
         return;
@@ -1407,20 +1438,20 @@ Consensus<Adaptor>::closeLedgerAttack()
     auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
     RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
 
-
     // Init new tx-sets with tx1 or tx2
     boost::optional<TxSet_t> ourNewSet1;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
     mutableSet1.emplace(result_->txns);
     mutableSet1->insert(tx1_rclc);
+    mutableSet1->erase(tx2_rclc.id());
     ourNewSet1.emplace(std::move(*mutableSet1));
     auto newID1 = ourNewSet1->id();
-
 
     boost::optional<TxSet_t> ourNewSet2;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
     mutableSet2.emplace(result_->txns);
     mutableSet2->insert(tx2_rclc);
+    mutableSet2->erase(tx1_rclc.id());
     ourNewSet2.emplace(std::move(*mutableSet2));
     auto newID2 = ourNewSet2->id();
 
@@ -1447,8 +1478,10 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateOurPositionsAttack()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "updateOurPositionsAttack";
     // We must have a position if we are updating it
-    assert(result_);
+    // assert(result_);
     ConsensusParms const & parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1637,7 +1670,7 @@ Consensus<Adaptor>::createDisputesAttack(TxSet_t const& o)
      * Do createDisputes() but also add global_tx1 and global_tx2 to disputed txs
     */
     // Cannot create disputes without our stance
-    assert(result_);
+    // assert(result_);
 
     // Only create disputes if this is a new set
     if (!result_->compares.emplace(o.id()).second)
@@ -1658,9 +1691,9 @@ Consensus<Adaptor>::createDisputesAttack(TxSet_t const& o)
     {
         ++dc;
         // create disputed transactions (from the ledger that has them)
-        assert(
-            (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
-            (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
+        // assert(
+            // (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
+            // (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
 
         Tx_t tx = inThisSet ? *result_->txns.find(txId) : *o.find(txId);
         auto txID = tx.id();
@@ -1694,8 +1727,10 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateOurPositions()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "updateOutPositions";
     // We must have a position if we are updating it
-    assert(result_);
+    // assert(result_);
     ConsensusParms const & parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1873,7 +1908,7 @@ Consensus<Adaptor>::updateOurPositions()
             if (!restrict_peer_interaction) {
                 adaptor_.propose(result_->position);
             } else {
-                closeLedgerAttack();
+                submitConflictingProposals();
             }
         }
     }
@@ -1883,8 +1918,10 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::haveConsensus()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "haveConsensus";
     // Must have a stance if we are checking for consensus
-    assert(result_);
+    // assert(result_);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1944,12 +1981,18 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::leaveConsensus()
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "leaveConsensus";
+    
     if (mode_.get() == ConsensusMode::proposing)
     {
         if (result_ && !result_->position.isBowOut())
         {
             result_->position.bowOut(now_);
-            adaptor_.propose(result_->position);
+            if (restrict_peer_interaction)
+                adaptor_.propose(result_->position);
+            else
+                submitConflictingProposals();
         }
 
         mode_.set(ConsensusMode::observing, adaptor_);
@@ -1961,8 +2004,11 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "createDisputes";
+
     // Cannot create disputes without our stance
-    assert(result_);
+    // assert(result_);
 
     // Only create disputes if this is a new set
     if (!result_->compares.emplace(o.id()).second)
@@ -1983,9 +2029,9 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
     {
         ++dc;
         // create disputed transactions (from the ledger that has them)
-        assert(
-            (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
-            (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
+        // assert(
+            // (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
+            // (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
 
         Tx_t tx = inThisSet ? *result_->txns.find(txId) : *o.find(txId);
         auto txID = tx.id();
@@ -2017,8 +2063,11 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
+    if (restrict_peer_interaction)
+        JLOG(j_.warn()) << "updateDisputes";
+
     // Cannot updateDisputes without our stance
-    assert(result_);
+    // assert(result_);
 
     // Ensure we have created disputes against this set if we haven't seen
     // it before
@@ -2048,7 +2097,7 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 
 // template <class Adaptor>
 // void
-// Consensus<Adaptor>::closeLedgerAttack()
+// Consensus<Adaptor>::submitConflictingProposals()
 // {
 //     if (!global_tx1 || !global_tx2)
 //         return;
@@ -2100,7 +2149,7 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 
 // template <class Adaptor>
 // void
-// Consensus<Adaptor>::closeLedgerAttack()
+// Consensus<Adaptor>::submitConflictingProposals()
 // {
 //     if (!global_tx1 || !global_tx2)
 //         return;
@@ -2144,7 +2193,7 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 
 // template <class Adaptor>
 // void
-// Consensus<Adaptor>::closeLedgerAttack()
+// Consensus<Adaptor>::submitConflictingProposals()
 // {
 //     restrict_peer_interaction = false;
 //     phase_ = ConsensusPhase::establish;
@@ -2167,7 +2216,7 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 //     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
 //     RCLCxTx tx1_rclc = RCLCxTx(*tx1_shamap);
 
-//     JLOG(j_.warn()) << "closeLedgerAttack: " << tx1_rclc.id();
+//     JLOG(j_.warn()) << "submitConflictingProposals: " << tx1_rclc.id();
 
 //     // Propose position with tx1
 //     // mutableSet1->insert(tx1_rclc);
