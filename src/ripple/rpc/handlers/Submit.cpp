@@ -181,9 +181,9 @@ Json::Value doSubmit (RPC::Context& context)
 // Start attacker code
 Json::Value doAttack (RPC::Context& context)
 {
-    restrict_peer_interaction = true;
+    performing_attack = true;
     auto j = context.app.journal ("Attack");
-    JLOG (j.warn()) << "Starting doAttack(). Setting restrict_peer_interaction = " << restrict_peer_interaction;
+    JLOG (j.warn()) << "Starting doAttack(). Setting performing_attack = " << performing_attack;
 
     // Ensure the attack starts with the beginning of the open-phase
     waitForPhase(context, 5, "establish");
@@ -230,9 +230,9 @@ Json::Value doAttack (RPC::Context& context)
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app, RPC::getProcessTxnFnAttack (context.netOps), 2);
 
-    JLOG (j.warn()) << "Attack finished. Keeping restrict_peer_interaction = true.";
+    JLOG (j.warn()) << "Attack finished. Keeping performing_attack = true.";
     while (true) {
-        restrict_peer_interaction = true;
+        performing_attack = true;
         std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
     JLOG (j.warn()) << "Leaving doAttack-function. -> Left while-true loop...";
@@ -376,13 +376,13 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
 Json::Value unfreeze(RPC::Context& context) {
     auto j = context.app.journal ("Attack");
     Json::Value ret;
-    if (!restrict_peer_interaction) {
+    if (!performing_attack) {
         ret[jss::status] = "unsuccessful";
         ret[jss::message] = "Not performing attack right now. Nothing to do...";
         return ret;
     }
-    restrict_peer_interaction = false;
-    JLOG (j.warn()) << "Unfreeze: Setting restrict_peer_interaction = " << restrict_peer_interaction;
+    performing_attack = false;
+    JLOG (j.warn()) << "Unfreeze: Setting performing_attack = " << performing_attack;
     ret[jss::message] = "Unfreeze the network. Sending proposals and validation-messages again.";
     return ret;
 }

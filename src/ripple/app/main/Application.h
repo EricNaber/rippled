@@ -35,7 +35,7 @@
 namespace ripple {
 
 // Start attacker code
-extern bool restrict_peer_interaction;
+extern bool performing_attack;
 extern bool finished_attack;
 extern Transaction::pointer global_tx1;
 extern Transaction::pointer global_tx2;

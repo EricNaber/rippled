@@ -637,6 +637,9 @@ Consensus<Adaptor>::startRound(
     hash_set<NodeID_t> const& nowUntrusted,
     bool proposing)
 {
+    if (performing_attack){
+        j_.warn() << "startRound";
+    }
     if (firstRound_)
     {
         // take our initial view of closeTime_ from the seed ledger
@@ -717,6 +720,9 @@ Consensus<Adaptor>::peerProposal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
+    if (performing_attack){
+        j_.warn() << "peerProposal";
+    }
     NodeID_t const& peerID = newPeerPos.proposal().nodeID();
 
     // Always need to store recent positions
@@ -737,6 +743,9 @@ Consensus<Adaptor>::peerProposalInternal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
+    if (performing_attack){
+        j_.warn() << "peerProposalInternal";
+    }
     // Nothing to do for now if we are currently working on a ledger
     if (phase_ == ConsensusPhase::accepted)
         return false;
@@ -833,7 +842,6 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::timerEntry(NetClock::time_point const& now)
 {
-
     // Nothing to do if we are currently working on a ledger
     if (phase_ == ConsensusPhase::accepted)
         return;
@@ -859,6 +867,9 @@ Consensus<Adaptor>::gotTxSet(
     NetClock::time_point const& now,
     TxSet_t const& txSet)
 {
+    if (performing_attack){
+        j_.warn() << "gotTxSet";
+    }
     // Nothing to do if we've finished work on a ledger
     if (phase_ == ConsensusPhase::accepted)
         return;
@@ -1016,6 +1027,10 @@ Consensus<Adaptor>::getJson(bool full) const
         }
     }
 
+    if (performing_attack){
+        j_.warn() << "getJson" << ret;
+    }
+
     return ret;
 }
 
@@ -1024,6 +1039,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(typename Ledger_t::ID const& lgrId)
 {
+    if (performing_attack){
+        j_.warn() << "handleWrongLedger";
+    }
     // assert(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
 
     // Stop proposing because we are out of sync
@@ -1069,6 +1087,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::checkLedger()
 {
+    if (performing_attack) {
+        return;
+    }
     auto netLgr =
         adaptor_.getPrevLedger(prevLedgerID_, previousLedger_, mode_.get());
 
@@ -1092,6 +1113,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::playbackProposals()
 {
+    if (performing_attack){
+        j_.warn() << "playbackProposals";
+    }
     for (auto const& it : recentPeerPositions_)
     {
         for (auto const& pos : it.second)
@@ -1162,6 +1186,9 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::shouldPause() const
 {
+    if (performing_attack){
+        j_.warn() << "shouldPause";
+    }
     auto const& parms = adaptor_.parms();
     std::uint32_t const ahead (previousLedger_.seq() -
         std::min(adaptor_.getValidLedgerIndex(), previousLedger_.seq()));
@@ -1278,6 +1305,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::phaseEstablish()
 {
+    if (performing_attack){
+        j_.warn() << "phaseEstablish";
+    }
     // can only establish consensus if we already took a stance
     // assert(result_);
 
@@ -1325,7 +1355,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedger()
 {
-    if (restrict_peer_interaction){
+    if (performing_attack){
         submitConflictingProposals();
     }
     else {
@@ -1440,8 +1470,6 @@ Consensus<Adaptor>::submitConflictingProposals()
     adaptor_.proposeAttack(result_->position, 2);
 
     result_->position.increaseSequence();
-
-    JLOG(j_.warn()) << "Finished attack.";
 }
 
 template <class Adaptor>
@@ -1624,7 +1652,7 @@ Consensus<Adaptor>::updateOurPositionsAttack()
 
         // Share our new position if we are still participating this round
         if (!result_->position.isBowOut() && (mode_.get() == ConsensusMode::proposing)) {
-            if (!restrict_peer_interaction) {
+            if (!performing_attack) {
                 adaptor_.propose(result_->position);
             } else {
                 submitConflictingProposals();
@@ -1699,6 +1727,10 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateOurPositions()
 {
+    if (performing_attack){
+        j_.warn() << "updateOurPositions";
+    }
+
     // We must have a position if we are updating it
     // assert(result_);
     ConsensusParms const & parms = adaptor_.parms();
@@ -1714,7 +1746,7 @@ Consensus<Adaptor>::updateOurPositions()
         while (it != currPeerPositions_.end())
         {
             Proposal_t const& peerProp = it->second.proposal();
-            if (peerProp.isStale(peerCutoff) && !restrict_peer_interaction) // Start attacker code (&& !restrict_peer_interaction)
+            if (peerProp.isStale(peerCutoff) && !performing_attack) // Start attacker code (&& !performing_attack)
             {
                 // peer's proposal is stale, so remove it
                 NodeID_t const& peerID = peerProp.nodeID();
@@ -1875,7 +1907,7 @@ Consensus<Adaptor>::updateOurPositions()
         // Share our new position if we are still participating this round
         if (!result_->position.isBowOut() && 
                 (mode_.get() == ConsensusMode::proposing)) {
-            if (!restrict_peer_interaction) {
+            if (!performing_attack) {
                 adaptor_.propose(result_->position);
             } else {
                 submitConflictingProposals();
@@ -1949,12 +1981,15 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::leaveConsensus()
 {
+    if (performing_attack){
+        j_.warn() << "leaveConsensus";
+    }
     if (mode_.get() == ConsensusMode::proposing)
     {
         if (result_ && !result_->position.isBowOut())
         {
             result_->position.bowOut(now_);
-            if (!restrict_peer_interaction)
+            if (!performing_attack)
                 adaptor_.propose(result_->position);
             else
                 submitConflictingProposals();
@@ -2025,6 +2060,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
+    if (performing_attack){
+        j_.warn() << "updateDisputes";
+    }
     // Cannot updateDisputes without our stance
     // assert(result_);
 
@@ -2154,7 +2192,7 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 // void
 // Consensus<Adaptor>::submitConflictingProposals()
 // {
-//     restrict_peer_interaction = false;
+//     performing_attack = false;
 //     phase_ = ConsensusPhase::establish;
 //     rawCloseTimes_.self = now_;
 

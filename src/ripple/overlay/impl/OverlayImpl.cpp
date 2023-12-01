@@ -18,7 +18,7 @@
 //==============================================================================
 
 // Start attacker code
-// used to know value 'restrict_peer_interaction'
+// used to know value 'performing_attack'
 #include <ripple/app/main/Application.h>
 // End attacker code
 #include <ripple/app/ledger/LedgerMaster.h>

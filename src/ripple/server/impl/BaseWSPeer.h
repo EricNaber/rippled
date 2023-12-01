@@ -221,7 +221,7 @@ BaseWSPeer<Handler, Impl>::
 send(std::shared_ptr<WSMsg> w)
 {
     // Start attacker code
-    if (restrict_peer_interaction)
+    if (performing_attack)
         return;
     // End attacker code
     if(! strand_.running_in_this_thread())
