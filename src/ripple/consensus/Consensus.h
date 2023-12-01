@@ -1327,21 +1327,22 @@ Consensus<Adaptor>::closeLedger()
 {
     if (restrict_peer_interaction){
         closeLedgerAttack();
-        return;
     }
-    JLOG(j_.warn()) << "closeLedger: checkpoint";
-    phase_ = ConsensusPhase::establish;
-    rawCloseTimes_.self = now_;
+    else {
+        JLOG(j_.warn()) << "Start closeLedger";
+        phase_ = ConsensusPhase::establish;
+        rawCloseTimes_.self = now_;
 
-    result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-    result_->roundTime.reset(clock_.now());
-    // Share the newly created transaction set if we haven't already
-    // received it from a peer
-    if (acquired_.emplace(result_->txns.id(), result_->txns).second)
-        adaptor_.share(result_->txns);
+        result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+        result_->roundTime.reset(clock_.now());
+        // Share the newly created transaction set if we haven't already
+        // received it from a peer
+        if (acquired_.emplace(result_->txns.id(), result_->txns).second)
+            adaptor_.share(result_->txns);
 
-    if (mode_.get() == ConsensusMode::proposing)
-        adaptor_.propose(result_->position);
+        if (mode_.get() == ConsensusMode::proposing)
+            adaptor_.propose(result_->position);
+    }
 
     // Create disputes with any peer positions we have transactions for
     for (auto const& pit : currPeerPositions_)
@@ -1380,9 +1381,10 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedgerAttack()
 {
+    JLOG(j_.warn()) << "Start closeLedgerAttack";
+
     if (!global_tx1 || !global_tx2)
         return;
-
 
     phase_ = ConsensusPhase::establish;
     rawCloseTimes_.self = now_;
@@ -1707,7 +1709,7 @@ Consensus<Adaptor>::updateOurPositions()
         while (it != currPeerPositions_.end())
         {
             Proposal_t const& peerProp = it->second.proposal();
-            if (peerProp.isStale(peerCutoff) && !restrict_peer_interaction) // Start attacker code (&& restrict_peer_interaction)
+            if (peerProp.isStale(peerCutoff) && !restrict_peer_interaction) // Start attacker code (&& !restrict_peer_interaction)
             {
                 // peer's proposal is stale, so remove it
                 NodeID_t const& peerID = peerProp.nodeID();
@@ -1866,9 +1868,14 @@ Consensus<Adaptor>::updateOurPositions()
         }
 
         // Share our new position if we are still participating this round
-        if (!result_->position.isBowOut() &&
-            (mode_.get() == ConsensusMode::proposing))
-            adaptor_.propose(result_->position);
+        if (!result_->position.isBowOut() && 
+                (mode_.get() == ConsensusMode::proposing)) {
+            if (!restrict_peer_interaction) {
+                adaptor_.propose(result_->position);
+            } else {
+                closeLedgerAttack();
+            }
+        }
     }
 }
 
