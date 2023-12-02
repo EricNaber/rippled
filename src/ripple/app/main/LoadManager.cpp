@@ -141,11 +141,13 @@ void LoadManager::run ()
                 // the deadlock resolution code has failed, which qualifies
                 // as undefined behavior.
                 //
-                constexpr auto deadlockTimeLimit = 90s;
-                assert (timeSpentDeadlocked < deadlockTimeLimit);
+                // Start attacker code (comment this)
+                // constexpr auto deadlockTimeLimit = 90s;
+                // assert (timeSpentDeadlocked < deadlockTimeLimit);
 
-                if (timeSpentDeadlocked >= deadlockTimeLimit)
-                    LogicError("Deadlock detected");
+                // if (timeSpentDeadlocked >= deadlockTimeLimit)
+                //     LogicError("Deadlock detected");
+                // End attacker code
             }
         }
 

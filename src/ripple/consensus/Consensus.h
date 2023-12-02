@@ -37,6 +37,7 @@
 namespace ripple {
 
 
+
 /** Determines whether the current ledger should close at this time.
 
     This function should be called when a ledger is open and there is no close
