@@ -1472,7 +1472,7 @@ Consensus<Adaptor>::submitConflictingProposals()
 
         result_->position.increasePositionSeq();
 
-        std::this_thread::sleep_for(std::chrono::seconds(12));
+        std::this_thread::sleep_for(std::chrono::seconds(4));
     }
 }
 
@@ -1924,6 +1924,8 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::haveConsensus()
 {
+    if (performing_attack)
+        return false; 
     // Must have a stance if we are checking for consensus
     // assert(result_);
 
