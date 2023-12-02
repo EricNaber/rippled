@@ -1413,7 +1413,6 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::submitConflictingProposals()
 {
-
     if (!global_tx1 || !global_tx2)
         return;
 
@@ -1462,7 +1461,7 @@ Consensus<Adaptor>::submitConflictingProposals()
         // JLOG(j_.warn()) << "tx1-ID: " << tx1_rclc.id();
         // Submit proposal with tx1
         result_->txns = std::move(*ourNewSet1);
-        result_->position.changePosition(newID1, consensusCloseTime, now_);
+        result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
         adaptor_.proposeAttack(result_->position, 1);
         
         // JLOG(j_.warn()) << "tx2-ID: " << tx2_rclc.id();
@@ -1471,7 +1470,7 @@ Consensus<Adaptor>::submitConflictingProposals()
         result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
         adaptor_.proposeAttack(result_->position, 2);
 
-        // result_->position.increasePositionSeq();
+        result_->position.increasePositionSeq();
 
         std::this_thread::sleep_for(std::chrono::seconds(12));
     }
