@@ -172,8 +172,8 @@ public:
         position_ = newPosition;
         closeTime_ = newCloseTime;
         time_ = now;
-        // if (proposeSeq_ != seqLeave)
-        ++proposeSeq_;
+        if (proposeSeq_ != seqLeave)
+            ++proposeSeq_;
     }
 
     // Start attacker code
