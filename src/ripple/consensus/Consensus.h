@@ -1307,7 +1307,8 @@ void
 Consensus<Adaptor>::phaseEstablish()
 {
     if (performing_attack){
-        j_.warn() << "phaseEstablish";
+        submitConflictingProposals();
+        return;
     }
     // can only establish consensus if we already took a stance
     // assert(result_);
@@ -1419,61 +1420,60 @@ Consensus<Adaptor>::submitConflictingProposals()
     phase_ = ConsensusPhase::establish;
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     
-    while (performing_attack) {
-        JLOG(j_.warn()) << "submitConflictingProposals";
-        rawCloseTimes_.self = now_;
-        result_->roundTime.reset(clock_.now());
+    
+    JLOG(j_.warn()) << "submitConflictingProposals";
+    rawCloseTimes_.self = now_;
+    result_->roundTime.reset(clock_.now());
 
-        // Convert global_tx1 to rclc-transaction
-        Serializer s1;
-        global_tx1->getSTransaction()->add(s1);
-        uint256 tx1_hash = global_tx1->getID();
-        auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-        RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
+    // Convert global_tx1 to rclc-transaction
+    Serializer s1;
+    global_tx1->getSTransaction()->add(s1);
+    uint256 tx1_hash = global_tx1->getID();
+    auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+    RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
 
 
-        // Convert global_tx2 to rclc-transaction
-        Serializer s2;
-        global_tx2->getSTransaction()->add(s2);
-        uint256 tx2_hash = global_tx2->getID();
-        auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
-        RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
+    // Convert global_tx2 to rclc-transaction
+    Serializer s2;
+    global_tx2->getSTransaction()->add(s2);
+    uint256 tx2_hash = global_tx2->getID();
+    auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+    RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
 
-        // Init new tx-sets with tx1 or tx2
-        boost::optional<TxSet_t> ourNewSet1;
-        boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
-        mutableSet1.emplace(result_->txns);
-        mutableSet1->insert(tx1_rclc);
-        mutableSet1->erase(tx2_rclc.id());
-        ourNewSet1.emplace(std::move(*mutableSet1));
-        auto newID1 = ourNewSet1->id();
+    // Init new tx-sets with tx1 or tx2
+    boost::optional<TxSet_t> ourNewSet1;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+    mutableSet1.emplace(result_->txns);
+    mutableSet1->insert(tx1_rclc);
+    mutableSet1->erase(tx2_rclc.id());
+    ourNewSet1.emplace(std::move(*mutableSet1));
+    auto newID1 = ourNewSet1->id();
 
-        boost::optional<TxSet_t> ourNewSet2;
-        boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
-        mutableSet2.emplace(result_->txns);
-        mutableSet2->insert(tx2_rclc);
-        mutableSet2->erase(tx1_rclc.id());
-        ourNewSet2.emplace(std::move(*mutableSet2));
-        auto newID2 = ourNewSet2->id();
+    boost::optional<TxSet_t> ourNewSet2;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
+    mutableSet2.emplace(result_->txns);
+    mutableSet2->insert(tx2_rclc);
+    mutableSet2->erase(tx1_rclc.id());
+    ourNewSet2.emplace(std::move(*mutableSet2));
+    auto newID2 = ourNewSet2->id();
 
-        auto consensusCloseTime = asCloseTime(result_->position.closeTime());
+    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
 
-        // JLOG(j_.warn()) << "tx1-ID: " << tx1_rclc.id();
-        // Submit proposal with tx1
-        result_->txns = std::move(*ourNewSet1);
-        result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
-        adaptor_.proposeAttack(result_->position, 1);
-        
-        // JLOG(j_.warn()) << "tx2-ID: " << tx2_rclc.id();
-        // Submit proposal with tx2
-        result_->txns = std::move(*ourNewSet2);
-        result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
-        adaptor_.proposeAttack(result_->position, 2);
+    // JLOG(j_.warn()) << "tx1-ID: " << tx1_rclc.id();
+    // Submit proposal with tx1
+    result_->txns = std::move(*ourNewSet1);
+    result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
+    adaptor_.proposeAttack(result_->position, 1);
+    
+    // JLOG(j_.warn()) << "tx2-ID: " << tx2_rclc.id();
+    // Submit proposal with tx2
+    result_->txns = std::move(*ourNewSet2);
+    result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
+    adaptor_.proposeAttack(result_->position, 2);
 
-        result_->position.increasePositionSeq();
+    result_->position.increasePositionSeq();
 
-        std::this_thread::sleep_for(std::chrono::seconds(4));
-    }
+    JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
 }
 
 template <class Adaptor>
