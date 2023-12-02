@@ -190,7 +190,7 @@ public:
     }
 
     void
-    increaseSequence()
+    increasePositionSeq()
     {
         ++proposeSeq_;
     }

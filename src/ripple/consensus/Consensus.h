@@ -1420,7 +1420,7 @@ Consensus<Adaptor>::submitConflictingProposals()
     phase_ = ConsensusPhase::establish;
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     
-    while (true) {
+    while (performing_attack) {
         JLOG(j_.warn()) << "submitConflictingProposals";
         rawCloseTimes_.self = now_;
         result_->roundTime.reset(clock_.now());
@@ -1459,17 +1459,19 @@ Consensus<Adaptor>::submitConflictingProposals()
 
         auto consensusCloseTime = asCloseTime(result_->position.closeTime());
 
-        JLOG(j_.warn()) << "tx1-ID: " << tx1_rclc.id();
+        // JLOG(j_.warn()) << "tx1-ID: " << tx1_rclc.id();
         // Submit proposal with tx1
         result_->txns = std::move(*ourNewSet1);
-        result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
+        result_->position.changePosition(newID1, consensusCloseTime, now_);
         adaptor_.proposeAttack(result_->position, 1);
         
-        JLOG(j_.warn()) << "tx2-ID: " << tx2_rclc.id();
+        // JLOG(j_.warn()) << "tx2-ID: " << tx2_rclc.id();
         // Submit proposal with tx2
         result_->txns = std::move(*ourNewSet2);
-        result_->position.changePosition(newID2, consensusCloseTime, now_);
+        result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
         adaptor_.proposeAttack(result_->position, 2);
+
+        // result_->position.increasePositionSeq();
 
         std::this_thread::sleep_for(std::chrono::seconds(12));
     }

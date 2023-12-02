@@ -77,8 +77,6 @@ Json::Value doCrawlShards           (RPC::Context&);
 Json::Value doStop                  (RPC::Context&);
 Json::Value doSubmit                (RPC::Context&);
 Json::Value doAttack                (RPC::Context&);                                                        // For attack
-void        sendProposal            (RPC::Context&, Json::Value tx, beast::Journal, int cluster_idx);       // For attack
-void        changePeers             (RPC::Context&, Overlay::PeerSequence, int, beast::Journal);            // For attack
 bool        shouldConnectPeer       (std::string, int);                                                     // For attack
 Json::Value unfreeze                (RPC::Context&);                                                        // For attack
 void        waitForPhase            (RPC::Context& context, int max_seconds_wait, std::string phase_name);  // For attack

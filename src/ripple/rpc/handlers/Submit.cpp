@@ -215,8 +215,6 @@ Json::Value doAttack (RPC::Context& context)
     const auto prevLedger = context.ledgerMaster.getClosedLedger();
     auto const failType = getFailHard (context);
 
-    changePeers(context, peers, 1, j);
-
     JLOG (j.warn()) << "Submit transaction to cluster 1: " << tx1;
     context.params[jss::tx_json] = tx1;
     global_tx1 = RPC::transactionSubmitAttack (
@@ -252,104 +250,6 @@ void waitForPhase(RPC::Context& context, int max_seconds_wait, std::string phase
     JLOG (j.warn()) << "waitForPhase: Now in: " << context.app.getOPs().getConsensusPhase();
 }
 
-void sendProposal(RPC::Context& context, Json::Value tx, beast::Journal j, int cluster_idx) {
-    // const auto currentLedger = context.app.getLedgerMaster().getCurrentLedger();
-    // auto closedLedger = context.app.getLedgerMaster().getClosedLedger();
-    
-    // // Start Consensus<Adaptor>::closeLedger()
-    // // We should not be closing if we already have a position
-
-    // phase_ = ConsensusPhase::establish;
-    // rawCloseTimes_.self = now_;
-
-    // boost::optional<Result> result_;
-
-    // result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-    // result_->roundTime.reset(clock_.now());
-    // // Share the newly created transaction set if we haven't already
-    // // received it from a peer
-    // if (acquired_.emplace(result_->txns.id(), result_->txns).second)
-    //     adaptor_.share(result_->txns);
-
-    // if (mode_.get() == ConsensusMode::proposing)
-    //     adaptor_.propose(result_->position);
-    
-    
-    // // Start RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
-    // JLOG(j_.warn()) << "We propose: "
-    //                  << (proposal.isBowOut()
-    //                          ? std::string("bowOut")
-    //                          : ripple::to_string(proposal.position()));
-
-    // protocol::TMProposeSet prop;
-
-    // prop.set_currenttxhash(
-    //     proposal.position().begin(), proposal.position().size());
-    // prop.set_previousledger(
-    //     proposal.prevLedger().begin(), proposal.position().size());
-    // prop.set_proposeseq(proposal.proposeSeq());
-    // prop.set_closetime(proposal.closeTime().time_since_epoch().count());
-
-    // prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
-
-    // auto signingHash = sha512Half(
-    //     HashPrefix::proposal,
-    //     std::uint32_t(proposal.proposeSeq()),
-    //     proposal.closeTime().time_since_epoch().count(),
-    //     proposal.prevLedger(),
-    //     proposal.position());
-
-    // auto sig = signDigest(valPublic_, valSecret_, signingHash);
-
-    // prop.set_signature(sig.data(), sig.size());
-
-    // auto const suppression = proposalUniqueId(
-    //     proposal.position(),
-    //     proposal.prevLedger(),
-    //     proposal.proposeSeq(),
-    //     proposal.closeTime(),
-    //     valPublic_,
-    //     sig);
-
-    // app_.getHashRouter ().addSuppression (suppression);
-    
-    // app_.overlay().send(prop);
-
-
-    // // Start OverlayImpl::send(protocol::TMProposeSet& m)
-    // protocol::TMProposeSet& m;
-    // if (setup_.expire)
-    //     m.set_hops(0);
-    // auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
-    // for_each([&](std::shared_ptr<PeerImp>&& p)
-    // {
-    //     p->send(sm);
-    // });
-}
-
-void changePeers (RPC::Context& context, Overlay::PeerSequence peers, int cluster_idx, beast::Journal j) {
-    JLOG (j.warn()) << "changePeers: start (cluster_idx: " << cluster_idx << ")";
-    
-    // Iter over all peers and either connect or disconnect from peers
-    for (auto& peer : peers) {
-        if (peer) {
-            auto peer_endpoint = peer->getRemoteAddress();
-            std::string addressString = peer_endpoint.address().to_string();
-
-            JLOG (j.warn()) << addressString << " has id: " << peer->id();
-
-            // if (shouldConnectPeer(addressString, cluster_idx)) {
-            //     JLOG (j.warn()) << "changePeers: connect    to   " << addressString;
-            //     context.app.overlay ().connect(peer_endpoint);
-            // } else {
-            //     JLOG (j.warn()) << "changePeers: disconnect from " << addressString;
-            //     auto peerImp = std::dynamic_pointer_cast<PeerImp>(peer);
-            //     peerImp->close();
-            // }
-        }
-    }
-}
-
 bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
     bool is_node1 = (strcmp(peer_address.c_str(), "10.5.1.1") == 0);  // in cluster 1
     bool is_node2 = (strcmp(peer_address.c_str(), "10.5.1.2") == 0);  // in cluster 1
@@ -371,6 +271,7 @@ bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
     }
 }
 
+// Does not work: while(true)-loop in consensus/Consensus.h::submitConflictingProposals
 Json::Value unfreeze(RPC::Context& context) {
     auto j = context.app.journal ("Attack");
     Json::Value ret;
