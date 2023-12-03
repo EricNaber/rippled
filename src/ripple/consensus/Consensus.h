@@ -1417,7 +1417,6 @@ Consensus<Adaptor>::submitConflictingProposals()
     if (!global_tx1 || !global_tx2)
         return;
 
-    JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
     phase_ = ConsensusPhase::establish;
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     
