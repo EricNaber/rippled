@@ -232,7 +232,7 @@ RCLConsensus::Adaptor::proposeAttack(RCLCxPeerPos::Proposal const& proposal, int
                      << (proposal.isBowOut()
                              ? std::string("bowOut")
                              : ripple::to_string(proposal.position())) << " to cluster " << cluster_idx
-                             << " with sequence_number: " << proposal.proposeSeq();
+                             << " with sequence_number " << proposal.proposeSeq();
 
     protocol::TMProposeSet prop;
 
