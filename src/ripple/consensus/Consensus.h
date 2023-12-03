@@ -1419,7 +1419,6 @@ Consensus<Adaptor>::submitConflictingProposals()
 
     JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
     phase_ = ConsensusPhase::establish;
-    bool first_submit = true;
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     
     
