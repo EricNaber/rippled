@@ -1420,7 +1420,6 @@ Consensus<Adaptor>::submitConflictingProposals()
     phase_ = ConsensusPhase::establish;
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     
-    
     JLOG(j_.warn()) << "submitConflictingProposals";
     rawCloseTimes_.self = now_;
     result_->roundTime.reset(clock_.now());
@@ -1459,19 +1458,15 @@ Consensus<Adaptor>::submitConflictingProposals()
 
     auto consensusCloseTime = asCloseTime(result_->position.closeTime());
 
-    // JLOG(j_.warn()) << "tx1-ID: " << tx1_rclc.id();
     // Submit proposal with tx1
     result_->txns = std::move(*ourNewSet1);
-    result_->position.changePositionAttack(newID1, consensusCloseTime, now_);
+    result_->position.changePosition(newID1, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 1);
     
-    // JLOG(j_.warn()) << "tx2-ID: " << tx2_rclc.id();
     // Submit proposal with tx2
     result_->txns = std::move(*ourNewSet2);
     result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 2);
-
-    result_->position.increasePositionSeq();
 
     JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
 }
@@ -1994,8 +1989,8 @@ Consensus<Adaptor>::leaveConsensus()
     {
         if (result_ && !result_->position.isBowOut())
         {
-            result_->position.bowOut(now_);
             if (!performing_attack)
+                result_->position.bowOut(now_);
                 adaptor_.propose(result_->position);
             else
                 submitConflictingProposals();
