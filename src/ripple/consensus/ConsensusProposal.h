@@ -190,8 +190,9 @@ public:
     }
 
     void
-    increasePositionSeq()
+    increasePositionSeq(Position_t const& newPosition)
     {
+        position_ = newPosition;
         ++proposeSeq_;
     }
     // End attacker code
