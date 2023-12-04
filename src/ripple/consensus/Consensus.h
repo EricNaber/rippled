@@ -1472,7 +1472,7 @@ Consensus<Adaptor>::submitConflictingProposals()
         if (proposalSequence == 0) {
             JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
         }
-        
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
         proposalSequence++;
     }
 }
