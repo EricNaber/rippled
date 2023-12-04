@@ -1466,7 +1466,7 @@ Consensus<Adaptor>::submitConflictingProposals()
     
     // Submit proposal with tx2
     result_->txns = std::move(*ourNewSet2);
-    result_->position.changePosition(newID2, consensusCloseTime, now_);
+    result_->position.changePositionAttack(newID2, consensusCloseTime, now_);
     adaptor_.proposeAttack(result_->position, 2);
 
     JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
