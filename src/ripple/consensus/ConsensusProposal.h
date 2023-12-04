@@ -181,18 +181,19 @@ public:
     changePositionAttack(
         Position_t const& newPosition,
         NetClock::time_point newCloseTime,
-        NetClock::time_point now)
+        NetClock::time_point now,
+        std::uint32_t proposalSequence)
     {
         // dont increase proposeSeq_
         position_ = newPosition;
         closeTime_ = newCloseTime;
         time_ = now;
+        proposeSeq_ = proposalSequence;
     }
 
     void
-    increasePositionSeq(Position_t const& newPosition)
+    increasePositionSeq()
     {
-        position_ = newPosition;
         ++proposeSeq_;
     }
     // End attacker code
