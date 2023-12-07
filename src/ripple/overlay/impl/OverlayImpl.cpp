@@ -1130,17 +1130,15 @@ OverlayImpl::send (protocol::TMProposeSet& m, int cluster_idx)
     {
         auto peer_endpoint = p->getRemoteAddress();
         std::string addressString = peer_endpoint.address().to_string();
-        if (     cluster_idx == 1 &&    // Send to network cluster 1
-            (   (strcmp(addressString.c_str(), "10.5.1.1") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.2") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.3") == 0) )) {
+
+        const char * ip_address = addressString.c_str();
+        int last_digit = ip_address[strlen(ip_address)-1] - '0';
+
+        if (cluster_idx == 1 && (last_digit % 2 == 0)) {
             JLOG(journal_.warn()) << "OverlayImpl::relay: send prop to " << addressString;
             p->send(sm);
         }
-        if (     cluster_idx == 2 &&    // Send to network cluster 2
-            (   (strcmp(addressString.c_str(), "10.5.1.4") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.5") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.6") == 0) )) {
+        if (cluster_idx == 2 && (last_digit % 2 == 1)) {
             JLOG(journal_.warn()) << "OverlayImpl::relay: send prop to " << addressString;
             p->send(sm);
         }
@@ -1249,17 +1247,15 @@ OverlayImpl::relay(
     for (auto const& p : peers) {
         auto peer_endpoint = p->getRemoteAddress();
         std::string addressString = peer_endpoint.address().to_string();
-        if (     cluster_idx == 1 &&    // Send to network cluster 1
-            (   (strcmp(addressString.c_str(), "10.5.1.1") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.2") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.3") == 0) )) {
+        
+        const char * ip_address = addressString.c_str();
+        int last_digit = ip_address[strlen(ip_address)-1] - '0';
+
+        if (cluster_idx == 1 && (last_digit % 2 == 0)) {
             JLOG(journal_.warn()) << "OverlayImpl::relay: send tx to " << addressString;
             p->send(sm);
         }
-        if (     cluster_idx == 2 &&    // Send to network cluster 2
-            (   (strcmp(addressString.c_str(), "10.5.1.4") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.5") == 0) || 
-                (strcmp(addressString.c_str(), "10.5.1.6") == 0) )) {
+        if (cluster_idx == 1 && (last_digit % 2 == 0)) {
             JLOG(journal_.warn()) << "OverlayImpl::relay: send tx to " << addressString;
             p->send(sm);
         }

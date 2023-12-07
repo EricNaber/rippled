@@ -182,9 +182,7 @@ Json::Value doSubmit (RPC::Context& context)
 Json::Value doAttack (RPC::Context& context)
 {
     auto j = context.app.journal ("Attack");
-    // JLOG (j.warn()) << "Context: " << context.params;
     JLOG (j.warn()) << "Starting doAttack()";
-    // exit(0);
 
     // Ensure the attack starts with the beginning of the open-phase
     waitForPhase(context, 5, "establish");
