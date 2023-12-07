@@ -1255,7 +1255,7 @@ OverlayImpl::relay(
             JLOG(journal_.warn()) << "OverlayImpl::relay: send tx to " << addressString;
             p->send(sm);
         }
-        if (cluster_idx == 1 && (last_digit % 2 == 0)) {
+        if (cluster_idx == 2 && (last_digit % 2 == 1)) {
             JLOG(journal_.warn()) << "OverlayImpl::relay: send tx to " << addressString;
             p->send(sm);
         }
