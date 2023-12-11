@@ -1420,52 +1420,53 @@ Consensus<Adaptor>::submitConflictingProposals()
     phase_ = ConsensusPhase::establish;
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     std::uint32_t proposalSequence = 0;
+    rawCloseTimes_.self = now_;
+    result_->roundTime.reset(clock_.now());
+    
+    // Convert global_tx1 to rclc-transaction
+    Serializer s1;
+    global_tx1->getSTransaction()->add(s1);
+    uint256 tx1_hash = global_tx1->getID();
+    auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+    RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
+
+    // Convert global_tx2 to rclc-transaction
+    Serializer s2;
+    global_tx2->getSTransaction()->add(s2);
+    uint256 tx2_hash = global_tx2->getID();
+    auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+    RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
+
+    // Init new tx-set with tx1
+    boost::optional<TxSet_t> ourNewSet1;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+    mutableSet1.emplace(result_->txns);
+    mutableSet1->insert(tx1_rclc);
+    mutableSet1->erase(tx2_rclc.id());
+    ourNewSet1.emplace(std::move(*mutableSet1));
+    auto newID1 = ourNewSet1->id();
+
+    // Init new tx-set with tx2
+    boost::optional<TxSet_t> ourNewSet2;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
+    mutableSet2.emplace(result_->txns);
+    mutableSet2->insert(tx2_rclc);
+    mutableSet2->erase(tx1_rclc.id());
+    ourNewSet2.emplace(std::move(*mutableSet2));
+    auto newID2 = ourNewSet2->id();
+
+    auto consensusCloseTime = asCloseTime(result_->position.closeTime());
     
     while (true) {
         JLOG(j_.warn()) << "submitConflictingProposals";
-        rawCloseTimes_.self = now_;
-        result_->roundTime.reset(clock_.now());
 
-        // Convert global_tx1 to rclc-transaction
-        Serializer s1;
-        global_tx1->getSTransaction()->add(s1);
-        uint256 tx1_hash = global_tx1->getID();
-        auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-        RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
-
-        // Convert global_tx2 to rclc-transaction
-        Serializer s2;
-        global_tx2->getSTransaction()->add(s2);
-        uint256 tx2_hash = global_tx2->getID();
-        auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
-        RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
-
-        // Init new tx-sets with tx1 or tx2
-        boost::optional<TxSet_t> ourNewSet1;
-        boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
-        mutableSet1.emplace(result_->txns);
-        mutableSet1->insert(tx1_rclc);
-        mutableSet1->erase(tx2_rclc.id());
-        ourNewSet1.emplace(std::move(*mutableSet1));
-        auto newID1 = ourNewSet1->id();
-
-        boost::optional<TxSet_t> ourNewSet2;
-        boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
-        mutableSet2.emplace(result_->txns);
-        mutableSet2->insert(tx2_rclc);
-        mutableSet2->erase(tx1_rclc.id());
-        ourNewSet2.emplace(std::move(*mutableSet2));
-        auto newID2 = ourNewSet2->id();
-
-        auto consensusCloseTime = asCloseTime(result_->position.closeTime());
-
-        // Submit proposal with tx1
-        result_->txns = std::move(*ourNewSet1);
+        // Submit proposal with tx1 to network cluster 1
+        result_->txns = *ourNewSet1;
         result_->position.changePositionAttack(newID1, consensusCloseTime, now_, proposalSequence);
         adaptor_.proposeAttack(result_->position, 1);
         
-        // Submit proposal with tx2
-        result_->txns = std::move(*ourNewSet2);
+        // Submit proposal with tx2 to network cluster 2
+        result_->txns = *ourNewSet2;
         result_->position.changePositionAttack(newID2, consensusCloseTime, now_, proposalSequence);
         adaptor_.proposeAttack(result_->position, 2);
 
@@ -2099,7 +2100,6 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 }  
 
 // Start attacker code
-
 // template <class Adaptor>
 // void
 // Consensus<Adaptor>::submitConflictingProposals()
@@ -2107,150 +2107,64 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 //     if (!global_tx1 || !global_tx2)
 //         return;
 
-//     result_->roundTime.reset(clock_.now());
-    
-//     // Propose tx1
-//     boost::optional<TxSet_t> ourNewSet1;
-//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
-
-//     // Convert global_tx1 to shamap-item
-//     Serializer s1;
-//     global_tx1->getSTransaction()->add(s1);
-//     uint256 tx1_hash = global_tx1->getID();
-//     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-
-//     // Propose position with tx1
-//     // mutableSet1->insertAttack(*tx1_shamap);
-//     ourNewSet1.emplace(std::move(*mutableSet1));
-
-//     auto consensusCloseTime = asCloseTime(result_->position.closeTime());
-//     auto newID = ourNewSet1->id();
-//     result_->txns = std::move(*ourNewSet1);
-//     result_->position.changePosition(newID, consensusCloseTime, now_);
-
-//     adaptor_.proposeAttack(result_->position, 1);
-
-//     // Propose tx2
-//     boost::optional<TxSet_t> ourNewSet2;
-//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
-
-//     // Convert global_tx1 to shamap-item
-//     Serializer s2;
-//     global_tx2->getSTransaction()->add(s2);
-//     uint256 tx2_hash = global_tx2->getID();
-//     auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
-
-//     // Propose position with tx1
-//     // mutableSet2->insertAttack(*tx2_shamap);
-//     ourNewSet2.emplace(std::move(*mutableSet2));
-
-//     consensusCloseTime = asCloseTime(result_->position.closeTime());
-//     newID = ourNewSet1->id();
-//     result_->txns = std::move(*ourNewSet2);
-//     result_->position.changePosition(newID, consensusCloseTime, now_);
-
-//     adaptor_.proposeAttack(result_->position, 1);
-// }
-
-// template <class Adaptor>
-// void
-// Consensus<Adaptor>::submitConflictingProposals()
-// {
-//     if (!global_tx1 || !global_tx2)
-//         return;
-
-//     result_->roundTime.reset(clock_.now());
-//     boost::optional<TxSet_t> ourNewSet;
-//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
-//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
-
-//     // Convert global_tx1 to shamap-item
-//     Serializer s1;
-//     global_tx1->getSTransaction()->add(s1);
-//     uint256 tx1_hash = global_tx1->getID();
-//     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-
-//     // Convert global_tx2 to shamap-item
-//     Serializer s2;
-//     global_tx2->getSTransaction()->add(s2);
-//     uint256 tx2_hash = global_tx2->getID();
-//     auto tx2_shamap = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
-    
-//     // Reset result
-//     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-//     mutableSet1.emplace(result_->txns);
-
-//     // Propose position with tx1
-//     mutableSet1->insertAttack(*tx1_shamap);
-//     ourNewSet.emplace(std::move(*mutableSet1));
-//     adaptor_.proposeAttack(result_->position, 1);
-
-//     // Reset result
-//     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-//     mutableSet2.emplace(result_->txns);
-    
-//     // Propose position with tx2
-//     mutableSet2->insertAttack(*tx2_shamap);
-//     ourNewSet.emplace(std::move(*mutableSet2));
-//     adaptor_.proposeAttack(result_->position, 2);
-// }
-
-
-// template <class Adaptor>
-// void
-// Consensus<Adaptor>::submitConflictingProposals()
-// {
-//     performing_attack = false;
 //     phase_ = ConsensusPhase::establish;
-//     rawCloseTimes_.self = now_;
-
 //     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-//     result_->roundTime.reset(clock_.now());
-//     // Share the newly created transaction set if we haven't already
-//     // received it from a peer
-//     if (acquired_.emplace(result_->txns.id(), result_->txns).second)
-//         adaptor_.share(result_->txns);
+//     std::uint32_t proposalSequence = 0;
+    
+//     while (true) {
+//         JLOG(j_.warn()) << "submitConflictingProposals";
+//         rawCloseTimes_.self = now_;
+//         result_->roundTime.reset(clock_.now());
 
-//     boost::optional<TxSet_t> ourNewSet1;
-//     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+//         // Convert global_tx1 to rclc-transaction
+//         Serializer s1;
+//         global_tx1->getSTransaction()->add(s1);
+//         uint256 tx1_hash = global_tx1->getID();
+//         auto tx1_shamap_item = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
+//         RCLTxSet::Tx tx1_rclc = RCLCxTx(*tx1_shamap_item);
 
-//     // Convert global_tx1 to shamap-item
-//     Serializer s1;
-//     global_tx1->getSTransaction()->add(s1);
-//     uint256 tx1_hash = global_tx1->getID();
-//     auto tx1_shamap = std::make_shared<SHAMapItem>(tx1_hash, s1.peekData());
-//     RCLCxTx tx1_rclc = RCLCxTx(*tx1_shamap);
+//         // Convert global_tx2 to rclc-transaction
+//         Serializer s2;
+//         global_tx2->getSTransaction()->add(s2);
+//         uint256 tx2_hash = global_tx2->getID();
+//         auto tx2_shamap_item = std::make_shared<SHAMapItem>(tx2_hash, s2.peekData());
+//         RCLTxSet::Tx tx2_rclc = RCLCxTx(*tx2_shamap_item);
 
-//     JLOG(j_.warn()) << "submitConflictingProposals: " << tx1_rclc.id();
+//         // Init new tx-sets with tx1 or tx2
+//         boost::optional<TxSet_t> ourNewSet1;
+//         boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
+//         mutableSet1.emplace(result_->txns);
+//         mutableSet1->insert(tx1_rclc);
+//         mutableSet1->erase(tx2_rclc.id());
+//         ourNewSet1.emplace(std::move(*mutableSet1));
+//         auto newID1 = ourNewSet1->id();
 
-//     // Propose position with tx1
-//     // mutableSet1->insert(tx1_rclc);
+//         boost::optional<TxSet_t> ourNewSet2;
+//         boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
+//         mutableSet2.emplace(result_->txns);
+//         mutableSet2->insert(tx2_rclc);
+//         mutableSet2->erase(tx1_rclc.id());
+//         ourNewSet2.emplace(std::move(*mutableSet2));
+//         auto newID2 = ourNewSet2->id();
 
-//     // boost::optional<TxSet_t> tx_set;
+//         auto consensusCloseTime = asCloseTime(result_->position.closeTime());
 
-//     // if (mode_.get() == ConsensusMode::proposing)
-//     //     adaptor_.propose(result_->position);
+//         // Submit proposal with tx1
+//         result_->txns = std::move(*ourNewSet1);
+//         result_->position.changePositionAttack(newID1, consensusCloseTime, now_, proposalSequence);
+//         adaptor_.proposeAttack(result_->position, 1);
+        
+//         // Submit proposal with tx2
+//         result_->txns = std::move(*ourNewSet2);
+//         result_->position.changePositionAttack(newID2, consensusCloseTime, now_, proposalSequence);
+//         adaptor_.proposeAttack(result_->position, 2);
 
-//     // Create disputes with any peer positions we have transactions for
-//     for (auto const& pit : currPeerPositions_)
-//     {
-//         auto const& pos = pit.second.proposal().position();
-//         auto const it = acquired_.find(pos);
-//         if (it != acquired_.end())
-//         {
-//             createDisputesAttack(it->second);
+//         if (proposalSequence == 0) {
+//             JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
 //         }
+//         std::this_thread::sleep_for(std::chrono::seconds(1));
+//         proposalSequence++;
 //     }
-
-
-//     // dont send init proposal
-//     //   -> wait 5ms (heartbeat-timer tiggers once every second anyway, right?)
-//     // updateOurPosition so that tx1 is included
-//     // send a proposal with seq = 0
-//     // updateOurPosition so that tx2 is included
-//     // send a proposal with seq = 0
-
-//     // updateOurPositionsAttack();
 // }
 // end attacker code
 
