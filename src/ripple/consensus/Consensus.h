@@ -1360,21 +1360,20 @@ Consensus<Adaptor>::closeLedger()
     if (performing_attack){
         submitConflictingProposals();
     }
-    else {
-        JLOG(j_.warn()) << "Start closeLedger";
-        phase_ = ConsensusPhase::establish;
-        rawCloseTimes_.self = now_;
+    
+    JLOG(j_.warn()) << "Start closeLedger";
+    phase_ = ConsensusPhase::establish;
+    rawCloseTimes_.self = now_;
 
-        result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
-        result_->roundTime.reset(clock_.now());
-        // Share the newly created transaction set if we haven't already
-        // received it from a peer
-        if (acquired_.emplace(result_->txns.id(), result_->txns).second)
-            adaptor_.share(result_->txns);
+    result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
+    result_->roundTime.reset(clock_.now());
+    // Share the newly created transaction set if we haven't already
+    // received it from a peer
+    if (acquired_.emplace(result_->txns.id(), result_->txns).second)
+        adaptor_.share(result_->txns);
 
-        if (mode_.get() == ConsensusMode::proposing) {
-            adaptor_.propose(result_->position);
-        }
+    if (mode_.get() == ConsensusMode::proposing) {
+        adaptor_.propose(result_->position);
     }
 
     // Create disputes with any peer positions we have transactions for
