@@ -245,10 +245,10 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     JLOG(j_.warn()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
                      << tx_.id();
     JLOG(j_.warn()) << Json::Compact{getJson()};
-    JLOG(j_.warn()) << "weight: " << weight << ", percentTime: " << percentTime
-                    << ", percentTime < p.avMID_CONSENSUS_TIME: " << percentTime < p.avMID_CONSENSUS_TIME
-                    << ", percentTime < p.avLATE_CONSENSUS_TIME: " << percentTime < p.avLATE_CONSENSUS_TIME
-                    << ", percentTime < p.avSTUCK_CONSENSUS_TIME: " << percentTime < p.avSTUCK_CONSENSUS_TIME;
+    JLOG(j_.warn()) << "weight: " << weight << ", percentTime: " << percentTime << "ourVote: " << ourVote_
+                    << ", avMID_CONSENSUS_TIME: " <<  p.avMID_CONSENSUS_TIME
+                    << ", avLATE_CONSENSUS_TIME: " <<  p.avLATE_CONSENSUS_TIME
+                    << ", avSTUCK_CONSENSUS_TIME: " <<  p.avSTUCK_CONSENSUS_TIME;
 
     return true;
 }
