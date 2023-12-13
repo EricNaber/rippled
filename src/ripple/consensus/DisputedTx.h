@@ -159,7 +159,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
     // changes vote to yes
     else if (votesYes && !it->second)
     {
-        JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
+        JLOG(j_.warn()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
         ++yays_;
         it->second = true;
@@ -167,7 +167,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
     // changes vote to no
     else if (!votesYes && it->second)
     {
-        JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
+        JLOG(j_.warn()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
         --yays_;
         it->second = false;
@@ -233,17 +233,23 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
 
     if (newPosition == ourVote_)
     {
-        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO")
+        JLOG(j_.warn()) << "No change (" << (ourVote_ ? "YES" : "NO")
                         << ") : weight " << weight << ", percent "
-                        << percentTime;
-        JLOG(j_.debug()) << Json::Compact{getJson()};
+                        << percentTime
+                        << "for tx: " << tx_.id();
+        JLOG(j_.warn()) << Json::Compact{getJson()};
         return false;
     }
 
     ourVote_ = newPosition;
-    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
+    JLOG(j_.warn()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
                      << tx_.id();
-    JLOG(j_.debug()) << Json::Compact{getJson()};
+    JLOG(j_.warn()) << Json::Compact{getJson()};
+    JLOG(j_.warn()) << "weight: " << weight << ", percentTime: " << percentTime << "ourVote: " << ourVote_
+                    << ", avMID_CONSENSUS_TIME: " <<  p.avMID_CONSENSUS_TIME
+                    << ", avLATE_CONSENSUS_TIME: " <<  p.avLATE_CONSENSUS_TIME
+                    << ", avSTUCK_CONSENSUS_TIME: " <<  p.avSTUCK_CONSENSUS_TIME;
+
     return true;
 }
 
