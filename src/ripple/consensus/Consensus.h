@@ -1449,8 +1449,8 @@ Consensus<Adaptor>::submitConflictingProposals()
     boost::optional<TxSet_t> ourNewSet2;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
     mutableSet2.emplace(result_->txns);
+    mutableSet2->insert(tx1_rclc);
     mutableSet2->insert(tx2_rclc);
-    mutableSet2->erase(tx2_rclc);
     ourNewSet2.emplace(std::move(*mutableSet2));
     auto newID2 = ourNewSet2->id();
 
