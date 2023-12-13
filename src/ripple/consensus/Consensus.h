@@ -1441,7 +1441,7 @@ Consensus<Adaptor>::submitConflictingProposals()
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet1;
     mutableSet1.emplace(result_->txns);
     mutableSet1->insert(tx1_rclc);
-    mutableSet1->insert(tx2_rclc);
+    mutableSet1->erase(tx2_rclc.id());
     ourNewSet1.emplace(std::move(*mutableSet1));
     auto newID1 = ourNewSet1->id();
 
@@ -1449,32 +1449,42 @@ Consensus<Adaptor>::submitConflictingProposals()
     boost::optional<TxSet_t> ourNewSet2;
     boost::optional<typename TxSet_t::MutableTxSet> mutableSet2;
     mutableSet2.emplace(result_->txns);
-    mutableSet2->insert(tx1_rclc);
+    mutableSet2->erase(tx1_rclc.id());
     mutableSet2->insert(tx2_rclc);
     ourNewSet2.emplace(std::move(*mutableSet2));
     auto newID2 = ourNewSet2->id();
 
     auto consensusCloseTime = asCloseTime(result_->position.closeTime());
+
+    // Submit proposal with tx1 to network cluster 1
+    result_->txns = *ourNewSet1;
+    result_->position.changePositionAttack(newID1, consensusCloseTime, now_, proposalSequence);
+    adaptor_.proposeAttack(result_->position, 1);
     
-    while (true) {
-        JLOG(j_.warn()) << "submitConflictingProposals";
+    // Submit proposal with tx2 to network cluster 2
+    result_->txns = *ourNewSet2;
+    result_->position.changePositionAttack(newID2, consensusCloseTime, now_, proposalSequence);
+    adaptor_.proposeAttack(result_->position, 2);
 
-        // Submit proposal with tx1 to network cluster 1
-        result_->txns = *ourNewSet1;
-        result_->position.changePositionAttack(newID1, consensusCloseTime, now_, proposalSequence);
-        adaptor_.proposeAttack(result_->position, 1);
-        
-        // Submit proposal with tx2 to network cluster 2
-        result_->txns = *ourNewSet2;
-        result_->position.changePositionAttack(newID2, consensusCloseTime, now_, proposalSequence);
-        adaptor_.proposeAttack(result_->position, 2);
-
-        if (proposalSequence == 0) {
-            JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        proposalSequence++;
+    if (proposalSequence == 0) {
+        JLOG(j_.warn()) << "Our Node-ID: " << result_->position.nodeID();
     }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    proposalSequence++;
+
+    // Init new tx-set with tx1
+    boost::optional<TxSet_t> ourNewSet3;
+    boost::optional<typename TxSet_t::MutableTxSet> mutableSet3;
+    mutableSet3.emplace(result_->txns);
+    mutableSet3->insert(tx1_rclc);
+    mutableSet3->insert(tx2_rclc);
+    ourNewSet3.emplace(std::move(*mutableSet3));
+    auto newID3 = ourNewSet3->id();
+
+    // Send proposal to all nodes
+    result_->txns = *ourNewSet3;
+    result_->position.changePositionAttack(newID3, consensusCloseTime, now_, proposalSequence);
+    adaptor_.propose(result_->position);
 }
 
 template <class Adaptor>
