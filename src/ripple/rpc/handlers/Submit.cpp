@@ -248,41 +248,6 @@ void waitForPhase(RPC::Context& context, int max_seconds_wait, std::string phase
     JLOG (j.warn()) << "waitForPhase: Now in: " << context.app.getOPs().getConsensusPhase();
 }
 
-bool shouldConnectPeer(std::string peer_address, int cluster_idx) {
-    bool is_node1 = (strcmp(peer_address.c_str(), "10.5.1.1") == 0);  // in cluster 1
-    bool is_node2 = (strcmp(peer_address.c_str(), "10.5.1.2") == 0);  // in cluster 1
-    bool is_node3 = (strcmp(peer_address.c_str(), "10.5.1.3") == 0);  // in cluster 1
-    bool is_node4 = (strcmp(peer_address.c_str(), "10.5.1.4") == 0);  // in cluster 2
-    bool is_node5 = (strcmp(peer_address.c_str(), "10.5.1.5") == 0);  // in cluster 2
-    bool is_node6 = (strcmp(peer_address.c_str(), "10.5.1.6") == 0);  // in cluster 2
-
-    if (cluster_idx == 0) {         // connect to all
-        return true;
-    }
-    else if (cluster_idx == 1) {    // connect to network-cluster 1
-        return (is_node1 || is_node2 || is_node3);
-    }
-    else if (cluster_idx == 2) {    // connect to network-cluster 2
-        return (is_node4 || is_node5 || is_node6);
-    } else {                        // connect to no nodes
-        return false;
-    }
-}
-
-// Does not work: while(true)-loop in consensus/Consensus.h::submitConflictingProposals
-Json::Value unfreeze(RPC::Context& context) {
-    auto j = context.app.journal ("Attack");
-    Json::Value ret;
-    if (!performing_attack) {
-        ret[jss::status] = "unsuccessful";
-        ret[jss::message] = "Not performing attack right now. Nothing to do...";
-        return ret;
-    }
-    performing_attack = false;
-    JLOG (j.warn()) << "Unfreeze: Setting performing_attack = " << performing_attack;
-    ret[jss::message] = "Unfreeze the network. Sending proposals and validation-messages again.";
-    return ret;
-}
 // End attacker code
 
 } // ripple
